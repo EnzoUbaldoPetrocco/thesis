@@ -1,4 +1,5 @@
 #! /usr/bin/env python3
+from configparser import Interpolation
 import io
 import os
 import zipfile
@@ -25,13 +26,42 @@ chinese_categories = []
 french = []
 french_categories = []
 
+path = '../chinese'
+try:
+    os.mkdir(path)
+except OSError:
+    print ("Creation of the directory %s failed" % path)
+else:
+    print ("Successfully created the directory %s " % path)
+path = '../french'
+try:
+    os.mkdir(path)
+except OSError:
+    print ("Creation of the directory %s failed" % path)
+else:
+    print ("Successfully created the directory %s " % path)
+
 def get_dimensions(height, width):
   list_size = []
-  list_size.append(math.floor((2500 - height)/2))
-  list_size.append(math.ceil((2500 - height)/2))
-  list_size.append(math.floor((1500 - width)/2))
-  list_size.append(math.ceil((1500 - width)/2))
+  list_size.append(math.floor((1000 - height)/2))
+  list_size.append(math.ceil((1000 - height)/2))
+  list_size.append(math.floor((500 - width)/2))
+  list_size.append(math.ceil((500 - width)/2))
   return list_size
+
+def manage_size(im):
+  dimensions = im.shape
+  
+  if dimensions[0] > 3000 or dimensions[1]>1500:
+    im = cv2.resize(im,(int(dimensions[0]*0.3),int(dimensions[1]*0.3)),interpolation = cv2.INTER_AREA )
+    dimensions = im.shape
+  if dimensions[0] > 2000 or dimensions[1]>1000:
+    im = cv2.resize(im,(int(dimensions[0]*0.3),int(dimensions[1]*0.3)),interpolation = cv2.INTER_AREA )
+    dimensions = im.shape
+  if dimensions[0] > 1000 or dimensions[1]>500:
+    im = cv2.resize(im,(int(dimensions[0]*0.3),int(dimensions[1]*0.3)),interpolation = cv2.INTER_AREA )
+    
+  return im
 
 def fill_chinese():
   global chinese, chinese_categories
@@ -45,7 +75,7 @@ def fill_chinese():
 
   for i in ds_sorted_chin_off:
     im = cv2.imread(str(i))
-
+    im = manage_size(im)
     dimensions = im.shape
     tblr = get_dimensions(dimensions[0],dimensions[1])
     im = cv2.copyMakeBorder(im, tblr[0],tblr[1],tblr[2],tblr[3],cv2.BORDER_CONSTANT,value=[255,255,255])
@@ -60,6 +90,7 @@ def fill_chinese():
   ds_sorted_chin_on = sorted([x for x in paths_chin_on])
   for i in ds_sorted_chin_on:
     im = cv2.imread(str(i))
+    im = manage_size(im)
     dimensions = im.shape
     tblr = get_dimensions(dimensions[0],dimensions[1])
     im = cv2.copyMakeBorder(im, tblr[0],tblr[1],tblr[2],tblr[3],cv2.BORDER_CONSTANT,value=[255,255,255])
@@ -68,6 +99,9 @@ def fill_chinese():
     chinese_categories.append(1)
   return chinese
 
+
+chinese = fill_chinese()
+print('finished')
 
 def fill_french():
   global french, french_categories
@@ -79,6 +113,7 @@ def fill_french():
   ds_sorted_fren_on = sorted([x for x in paths_fren_on])
   for i in ds_sorted_fren_on:
     im = cv2.imread(str(i))
+    im = manage_size(im)
     dimensions = im.shape
     tblr = get_dimensions(dimensions[0],dimensions[1])
     im = cv2.copyMakeBorder(im, tblr[0],tblr[1],tblr[2],tblr[3],cv2.BORDER_CONSTANT,value=[255,255,255])
@@ -92,6 +127,7 @@ def fill_french():
   ds_sorted_fren_off = sorted([x for x in paths_fren_off])
   for i in ds_sorted_fren_off:
     im = cv2.imread(str(i))
+    im = manage_size(im)
     dimensions = im.shape
     tblr = get_dimensions(dimensions[0],dimensions[1])
     im = cv2.copyMakeBorder(im, tblr[0],tblr[1],tblr[2],tblr[3],cv2.BORDER_CONSTANT,value=[255,255,255])
@@ -100,11 +136,8 @@ def fill_french():
     french_categories.append(0)
   return french
 
-chinese = fill_chinese()
 #french = fill_french()
 
-#img = chinese[]
-#print(img)
 #imgplot = plt.imshow(img)
 #plt.show()
 #print(french)
