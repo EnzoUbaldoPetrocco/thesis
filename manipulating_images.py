@@ -43,27 +43,14 @@ def fill_chinese():
       paths_chin_off.extend(pathlib.Path(path).glob(files))
   ds_sorted_chin_off = sorted([x for x in paths_chin_off])
 
-  example_im = cv2.imread(str(ds_sorted_chin_off[1]))
-  imgplot = plt.imshow(example_im)
-  dimensions = example_im.shape
-  tblr = get_dimensions(dimensions[0],dimensions[1])
-  plt.show()
-  resized_image = cv2.copyMakeBorder(example_im, tblr[0],tblr[1],tblr[2],tblr[3],cv2.BORDER_CONSTANT,value=[255,255,255])
-  example_im = rgb2gray(example_im)
-  imgplot = plt.imshow(example_im)
-  plt.show()
-  imgplot = plt.imshow(resized_image)
-  plt.show()
-  #dimensions = (height, width)
-  
-
-
   for i in ds_sorted_chin_off:
-    #im = np.array(imageio.imread(str(i)))
     im = cv2.imread(str(i))
+
+    dimensions = im.shape
+    tblr = get_dimensions(dimensions[0],dimensions[1])
+    im = cv2.copyMakeBorder(im, tblr[0],tblr[1],tblr[2],tblr[3],cv2.BORDER_CONSTANT,value=[255,255,255])
+
     im = rgb2gray(im)
-    #im = rgb2gray(im)
-    #im = resize(im, (200,200))
     chinese.append(im.flatten())
     chinese_categories.append(0)
   path = '../accese vs spente/cinesi accese/'
@@ -72,10 +59,11 @@ def fill_chinese():
       paths_chin_on.extend(pathlib.Path(path).glob(files))
   ds_sorted_chin_on = sorted([x for x in paths_chin_on])
   for i in ds_sorted_chin_on:
-    #im = np.array(imageio.imread(str(i)))
     im = cv2.imread(str(i))
+    dimensions = im.shape
+    tblr = get_dimensions(dimensions[0],dimensions[1])
+    im = cv2.copyMakeBorder(im, tblr[0],tblr[1],tblr[2],tblr[3],cv2.BORDER_CONSTANT,value=[255,255,255])
     im = rgb2gray(im)
-    #im = resize(im, (200,200))
     chinese.append(im.flatten())
     chinese_categories.append(1)
   return chinese
@@ -90,10 +78,11 @@ def fill_french():
       paths_fren_on.extend(pathlib.Path(path).glob(files))
   ds_sorted_fren_on = sorted([x for x in paths_fren_on])
   for i in ds_sorted_fren_on:
-    #im = np.array(imageio.imread(str(i)))
     im = cv2.imread(str(i))
+    dimensions = im.shape
+    tblr = get_dimensions(dimensions[0],dimensions[1])
+    im = cv2.copyMakeBorder(im, tblr[0],tblr[1],tblr[2],tblr[3],cv2.BORDER_CONSTANT,value=[255,255,255])
     im = rgb2gray(im)
-    #im = resize(im, (200,200))
     french.append(im.flatten())
     french_categories.append(1)
   path = '../accese vs spente/francesi/'
@@ -102,9 +91,10 @@ def fill_french():
       paths_fren_off.extend(pathlib.Path(path).glob(files))
   ds_sorted_fren_off = sorted([x for x in paths_fren_off])
   for i in ds_sorted_fren_off:
-    #im = np.array(imageio.imread(str(i)))
     im = cv2.imread(str(i))
-    #im = resize(im, (200,200))
+    dimensions = im.shape
+    tblr = get_dimensions(dimensions[0],dimensions[1])
+    im = cv2.copyMakeBorder(im, tblr[0],tblr[1],tblr[2],tblr[3],cv2.BORDER_CONSTANT,value=[255,255,255])
     im = rgb2gray(im)
     french.append(im.flatten())
     french_categories.append(0)
