@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 from skimage import data
 import math
+import pandas as pd
 
 file_name = "../accese vs spente.zip"
 # opening the zip file in READ mode
@@ -74,7 +75,11 @@ def fill_chinese():
     im = cv2.copyMakeBorder(im, tblr[0],tblr[1],tblr[2],tblr[3],cv2.BORDER_CONSTANT,value=[255,255,255])
 
     im = rgb2gray(im)
-    chinese.append(im.flatten())
+
+    im_obj = pd.DataFrame(im)
+
+    chinese.append(im_obj)
+    #chinese.append(im.flatten())
     chinese_categories.append(0)
   path = '../accese vs spente/cinesi accese/'
   paths_chin_on = []
@@ -88,14 +93,17 @@ def fill_chinese():
     tblr = get_dimensions(dimensions[0],dimensions[1])
     im = cv2.copyMakeBorder(im, tblr[0],tblr[1],tblr[2],tblr[3],cv2.BORDER_CONSTANT,value=[255,255,255])
     im = rgb2gray(im)
-    chinese.append(im.flatten())
+
+    im_obj = pd.DataFrame(im)
+
+    chinese.append(im_obj)
     chinese_categories.append(1)
   return chinese
 
 
 def fill_french():
   global french, french_categories
-  path = '../accese vs spente/francesi_accese/'
+  path = '../accese vs spente/francesi accese/'
   types = ('*.png', '*.jpg', '*.jpeg')
   paths_fren_on = []
   for files in types:
@@ -108,7 +116,8 @@ def fill_french():
     tblr = get_dimensions(dimensions[0],dimensions[1])
     im = cv2.copyMakeBorder(im, tblr[0],tblr[1],tblr[2],tblr[3],cv2.BORDER_CONSTANT,value=[255,255,255])
     im = rgb2gray(im)
-    french.append(im.flatten())
+    im_obj = pd.DataFrame(im)
+    french.append(im_obj)
     french_categories.append(1)
   path = '../accese vs spente/francesi/'
   paths_fren_off = []
@@ -122,16 +131,18 @@ def fill_french():
     tblr = get_dimensions(dimensions[0],dimensions[1])
     im = cv2.copyMakeBorder(im, tblr[0],tblr[1],tblr[2],tblr[3],cv2.BORDER_CONSTANT,value=[255,255,255])
     im = rgb2gray(im)
-    french.append(im.flatten())
+    im_obj = pd.DataFrame(im)
+
+    french.append(im_obj)
     french_categories.append(0)
   return french
 
 
-chinese = fill_chinese()
-french = fill_french()
-print('finished')
+fill_chinese()
+fill_french()
 
-#imgplot = plt.imshow(img)
+
+#imgplot = plt.imshow(chinese[20])
 #plt.show()
 #print(french)
 #print(chinese)
