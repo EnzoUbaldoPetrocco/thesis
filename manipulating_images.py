@@ -1,19 +1,14 @@
 #! /usr/bin/env python3
-from configparser import Interpolation
-import io
+
 import os
 import zipfile
-import numpy as np
-import imageio
 import pathlib
-from PIL import Image
 from skimage.color import rgb2gray
 import cv2
 import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
-from skimage import data
 import math
 import pandas as pd
+import csv
 
 file_name = "../accese vs spente.zip"
 # opening the zip file in READ mode
@@ -141,8 +136,21 @@ def fill_french():
 fill_chinese()
 fill_french()
 
+with open('../chinese/chinese.csv', 'w') as csvfile:
+  for i in range(0, len(chinese)):
+# open the file in the write mode
+    fieldnames = ['image', 'category']
+    writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+    writer.writeheader()
+    writer.writerow({'image': chinese[i], 'category': chinese_categories[i]})
 
-#imgplot = plt.imshow(chinese[20])
-#plt.show()
-#print(french)
-#print(chinese)
+
+with open('../french/french.csv', 'w') as csvfile:
+  for i in range(0, len(french)):
+# open the file in the write mode
+    fieldnames = ['image', 'category']
+    writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+    writer.writeheader()
+    writer.writerow({'image': french[i], 'category': french_categories[i]})
+
+
