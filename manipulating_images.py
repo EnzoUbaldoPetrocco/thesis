@@ -43,24 +43,17 @@ else:
 
 def get_dimensions(height, width):
   list_size = []
-  list_size.append(math.floor((1000 - height)/2))
-  list_size.append(math.ceil((1000 - height)/2))
+  list_size.append(math.floor((700 - height)/2))
+  list_size.append(math.ceil((700 - height)/2))
   list_size.append(math.floor((500 - width)/2))
   list_size.append(math.ceil((500 - width)/2))
   return list_size
 
 def manage_size(im):
   dimensions = im.shape
-  
-  if dimensions[0] > 3000 or dimensions[1]>1500:
-    im = cv2.resize(im,(int(dimensions[0]*0.3),int(dimensions[1]*0.3)),interpolation = cv2.INTER_AREA )
+  while dimensions[0]>700 or dimensions[1]>500:
+    im = cv2.resize(im,(int(dimensions[0]*0.5),int(dimensions[1]*0.5)),interpolation = cv2.INTER_AREA )
     dimensions = im.shape
-  if dimensions[0] > 2000 or dimensions[1]>1000:
-    im = cv2.resize(im,(int(dimensions[0]*0.3),int(dimensions[1]*0.3)),interpolation = cv2.INTER_AREA )
-    dimensions = im.shape
-  if dimensions[0] > 1000 or dimensions[1]>500:
-    im = cv2.resize(im,(int(dimensions[0]*0.3),int(dimensions[1]*0.3)),interpolation = cv2.INTER_AREA )
-    
   return im
 
 def fill_chinese():
@@ -100,9 +93,6 @@ def fill_chinese():
   return chinese
 
 
-chinese = fill_chinese()
-print('finished')
-
 def fill_french():
   global french, french_categories
   path = '../accese vs spente/francesi_accese/'
@@ -136,7 +126,10 @@ def fill_french():
     french_categories.append(0)
   return french
 
-#french = fill_french()
+
+chinese = fill_chinese()
+french = fill_french()
+print('finished')
 
 #imgplot = plt.imshow(img)
 #plt.show()
