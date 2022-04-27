@@ -136,21 +136,24 @@ def fill_french():
 fill_chinese()
 fill_french()
 
-with open('../chinese/chinese.csv', 'w') as csvfile:
+with open('./chinese/chinese.csv', 'w', newline='') as csvfile:
+  #fieldnames = ['image', 'category']
+  #writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+
+  writer = csv.writer(csvfile)
   for i in range(0, len(chinese)):
 # open the file in the write mode
-    fieldnames = ['image', 'category']
-    writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-    writer.writeheader()
-    writer.writerow({'image': chinese[i], 'category': chinese_categories[i]})
+    #writer.writeheader()
+    writer.writerow([chinese[i],chinese_categories[i]])
 
 
-with open('../french/french.csv', 'w') as csvfile:
+with open('./french/french.csv', 'w', newline='') as csvfile:
+  #fieldnames = ['image', 'category']
+  #writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+  writer = csv.writer(csvfile)
   for i in range(0, len(french)):
 # open the file in the write mode
-    fieldnames = ['image', 'category']
-    writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-    writer.writeheader()
-    writer.writerow({'image': french[i], 'category': french_categories[i]})
+    #writer.writeheader()
+    writer.writerow([french[i], french_categories[i]])
 
 
