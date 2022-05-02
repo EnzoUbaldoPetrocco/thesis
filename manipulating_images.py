@@ -49,7 +49,7 @@ class ImagesToData:
   def manage_size(self,im):
     dimensions = im.shape
     while dimensions[0]>size or dimensions[1]>size:
-      im = cv2.resize(im,(int(dimensions[0]*0.5),int(dimensions[1]*0.5)),interpolation = cv2.INTER_AREA )
+      im = cv2.resize(im,(int(dimensions[0]*0.9),int(dimensions[1]*0.9)),interpolation = cv2.INTER_AREA )
       dimensions = im.shape
     return im
 
