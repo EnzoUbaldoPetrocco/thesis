@@ -24,6 +24,10 @@ FXT = itd.french[floor(len(itd.french)*0.7):len(itd.french)-1]
 FY = itd.french_categories[0:floor(len(itd.french)*0.7)]
 FYT = itd.french_categories[floor(len(itd.french)*0.7):len(itd.french)-1]
 
+
+MXT = np.concatenate(CXT, FXT)
+MYT = np.concatenate(CYT, FYT)
+
 ####################################################################
 ###################### PLOT IMAGE ##################################
 print('images')

@@ -23,6 +23,11 @@ FXT = itd.french[floor(len(itd.french)*0.7):len(itd.french)-1]
 FY = itd.french_categories[0:floor(len(itd.french)*0.7)]
 FYT = itd.french_categories[floor(len(itd.french)*0.7):len(itd.french)-1]
 
+MX = np.concatenate(CX, FX)
+MXT = np.concatenate(CXT, FXT)
+MY = np.concatenate(CY, FY)
+MYT = np.concatenate(CYT, FYT)
+
 ####################################################################
 ###################### PLOT IMAGE ##################################
 plt.figure()
@@ -34,52 +39,37 @@ plt.imshow(np.reshape(FX[30], (200,200)))
 ################### NORMALIZE DATA #################################
 
 scalerX = preprocessing.MinMaxScaler()
-CX = scalerX.fit_transform(CX)
-CXT = scalerX.transform(CXT)
-FX = scalerX.fit_transform(FX)
-FXT = scalerX.transform(FXT)
+MX = scalerX.fit_transform(MX)
+MXT = scalerX.transform(MXT)
 
 #####################################################################
 ################### MODEL SELECTION (HYPERPARAMETER TUNING)##########
-Cgrid = {'C':        np.logspace(-4,3,5),
+Mgrid = {'C':        np.logspace(-4,3,5),
         'kernel':   ['rbf'],
         'gamma':    np.logspace(-4,3,5)}
-CMS = GridSearchCV(estimator = SVC(),
-                  param_grid = Cgrid,
+MMS = GridSearchCV(estimator = SVC(),
+                  param_grid = Mgrid,
                   scoring = 'balanced_accuracy',
                   cv = 10,
                   verbose = 0)
-CH = CMS.fit(CX,CY)
+MH = MMS.fit(CX,CY)
 
 
-Fgrid = {'C':        np.logspace(-4,3,5),
-        'kernel':   ['rbf'],
-        'gamma':    np.logspace(-4,3,5)}
-FMS = GridSearchCV(estimator = SVC(),
-                  param_grid = Fgrid,
-                  scoring = 'balanced_accuracy',
-                  cv = 10,
-                  verbose = 0)
-FH = FMS.fit(FX,FY)
+MM = SVC(C = MH.best_params_['C'],
+        kernel = MH.best_params_['kernel'],
+        gamma = MH.best_params_['gamma'])
+MM.fit(CX,CY)
 
-
-CM = SVC(C = CH.best_params_['C'],
-        kernel = CH.best_params_['kernel'],
-        gamma = CH.best_params_['gamma'])
-CM.fit(CX,CY)
-
-FM = SVC(C = FH.best_params_['C'],
-        kernel = FH.best_params_['kernel'],
-        gamma = FH.best_params_['gamma'])
-FM.fit(FX,FY)
 
 ####################################################
 ################## TESTING #########################
 
-CYF = CM.predict(CXT)
-confusion_matrix(CYT,CYF)
+print('RPREDICTING FRENCH TEST SET')
+MFYF = MM.predict(FXT)
+print(confusion_matrix(FYT,MFYF))
+print('PREDICTING CHINESE TEST SET')
+MCYF = MM.predict(CXT)
+print(confusion_matrix(CYT,MCYF))
 
-FYF = FM.predict(FXT)
-confusion_matrix(FYT,FYF)
 
 print('arrivato')

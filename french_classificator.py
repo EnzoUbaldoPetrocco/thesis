@@ -29,6 +29,7 @@ FYT = itd.french_categories[floor(len(itd.french)*0.7):len(itd.french)-1]
 print('PLOT IMAGE')
 plt.figure()
 plt.imshow(np.reshape(FX[30], (200,200)))
+plt.show()
 
 ####################################################################
 ################### NORMALIZE DATA #################################
@@ -60,10 +61,10 @@ FM.fit(FX,FY)
 
 print('RPREDICTING FRENCH TEST SET')
 FYF = FM.predict(FXT)
-confusion_matrix(FYT,FYF)
+print(confusion_matrix(FYT,FYF))
 print('PREDICTING CHINESE TEST SET')
 CFYF = FM.predict(CXT)
-confusion_matrix(CYT,CFYF)
+print(confusion_matrix(CYT,CFYF))
 
 
 print('arrivato')
