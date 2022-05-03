@@ -25,14 +25,16 @@ FY = itd.french_categories[0:floor(len(itd.french)*0.7)]
 FYT = itd.french_categories[floor(len(itd.french)*0.7):len(itd.french)-1]
 
 
-MXT = np.concatenate(CXT, FXT)
-MYT = np.concatenate(CYT, FYT)
+MX = np.concatenate((CX, FX), axis=0)
+MXT = np.concatenate((CXT, FXT), axis = 0)
+MY = np.concatenate((CY, FY), axis = 0)
+MYT = np.concatenate((CYT, FYT), axis=0)
 
 ####################################################################
 ###################### PLOT IMAGE ##################################
 print('images')
 plt.figure()
-plt.imshow(np.reshape(CX[30], (200,200)))
+plt.imshow(np.reshape(CX[30], (250,250)))
 plt.show()
 ####################################################################
 ################### NORMALIZE DATA #################################
@@ -69,5 +71,10 @@ print(confusion_matrix(CYT,CYF))
 print('Predicting French test set')
 CFYF = CM.predict(FXT)
 print(confusion_matrix(FYT,CFYF))
+
+print('PREDICTING MIX TEST SET')
+MCYF = MM.predict(MXT)
+print(confusion_matrix(MYT,MCYF))
+
 
 print('arrivato')

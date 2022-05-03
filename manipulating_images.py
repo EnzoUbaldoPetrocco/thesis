@@ -11,7 +11,7 @@ import math
 import pandas as pd
 import random
 
-size = 200
+size = 250
 
 class ImagesToData:
 
@@ -142,8 +142,6 @@ class ImagesToData:
       self.chinese_categories.append(temp_chin_cat)
     for i in range(300):
       index = random.randint(0,len(self.french))
-      temp_fren = self.french[index]
-      temp_fren_cat = self.french_categories[index]
       self.french.pop(index)
       self.french.append(temp_chin)
       self.french_categories.pop(index)

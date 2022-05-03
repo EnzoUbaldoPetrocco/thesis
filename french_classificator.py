@@ -11,6 +11,7 @@ from math import floor
 from sklearn.metrics import confusion_matrix
 ############################################################
 ############### READ DATA ##################################
+
 itd = manipulating_images.ImagesToData()
 
 CX = itd.chinese[0:floor(len(itd.chinese)*0.7)]
@@ -23,12 +24,15 @@ FXT = itd.french[floor(len(itd.french)*0.7):len(itd.french)-1]
 FY = itd.french_categories[0:floor(len(itd.french)*0.7)]
 FYT = itd.french_categories[floor(len(itd.french)*0.7):len(itd.french)-1]
 
-
+MX = np.concatenate((CX, FX), axis=0)
+MXT = np.concatenate((CXT, FXT), axis = 0)
+MY = np.concatenate((CY, FY), axis = 0)
+MYT = np.concatenate((CYT, FYT), axis=0)
 ####################################################################
 ###################### PLOT IMAGE ##################################
 print('PLOT IMAGE')
 plt.figure()
-plt.imshow(np.reshape(FX[30], (200,200)))
+plt.imshow(np.reshape(FX[30], (250,250)))
 plt.show()
 
 ####################################################################
@@ -62,6 +66,7 @@ FM.fit(FX,FY)
 print('RPREDICTING FRENCH TEST SET')
 FYF = FM.predict(FXT)
 print(confusion_matrix(FYT,FYF))
+
 print('PREDICTING CHINESE TEST SET')
 CFYF = FM.predict(CXT)
 print(confusion_matrix(CYT,CFYF))

@@ -23,27 +23,30 @@ FXT = itd.french[floor(len(itd.french)*0.7):len(itd.french)-1]
 FY = itd.french_categories[0:floor(len(itd.french)*0.7)]
 FYT = itd.french_categories[floor(len(itd.french)*0.7):len(itd.french)-1]
 
-MX = np.concatenate(CX, FX)
-MXT = np.concatenate(CXT, FXT)
-MY = np.concatenate(CY, FY)
-MYT = np.concatenate(CYT, FYT)
+MX = np.concatenate((CX, FX), axis=0)
+MXT = np.concatenate((CXT, FXT), axis = 0)
+MY = np.concatenate((CY, FY), axis = 0)
+MYT = np.concatenate((CYT, FYT), axis=0)
 
 ####################################################################
 ###################### PLOT IMAGE ##################################
+print('PLOT IMAGE')
 plt.figure()
-plt.imshow(np.reshape(CX[30], (200,200)))
+plt.imshow(np.reshape(CX[30], (250,250)))
+plt.show()
 plt.figure()
-plt.imshow(np.reshape(FX[30], (200,200)))
-
+plt.imshow(np.reshape(FX[30], (250,250)))
+plt.show()
 ####################################################################
 ################### NORMALIZE DATA #################################
-
+print('NORMALIZE DATA')
 scalerX = preprocessing.MinMaxScaler()
 MX = scalerX.fit_transform(MX)
 MXT = scalerX.transform(MXT)
 
 #####################################################################
 ################### MODEL SELECTION (HYPERPARAMETER TUNING)##########
+print('MODEL SELECTION AND TUNING')
 Mgrid = {'C':        np.logspace(-4,3,5),
         'kernel':   ['rbf'],
         'gamma':    np.logspace(-4,3,5)}
@@ -54,7 +57,7 @@ MMS = GridSearchCV(estimator = SVC(),
                   verbose = 0)
 MH = MMS.fit(CX,CY)
 
-
+print('CLASSIFICATION')
 MM = SVC(C = MH.best_params_['C'],
         kernel = MH.best_params_['kernel'],
         gamma = MH.best_params_['gamma'])
@@ -70,6 +73,9 @@ print(confusion_matrix(FYT,MFYF))
 print('PREDICTING CHINESE TEST SET')
 MCYF = MM.predict(CXT)
 print(confusion_matrix(CYT,MCYF))
+print('PREDICTING MIX TEST SET')
+MCYF = MM.predict(MXT)
+print(confusion_matrix(MYT,MCYF))
 
 
 print('arrivato')
