@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 
-import os
+from turtle import width
 import zipfile
 import pathlib
 import numpy
@@ -10,34 +10,12 @@ import matplotlib.pyplot as plt
 import math
 import pandas as pd
 import random
+import time
 
-size = 250
+size = 400
 
 class ImagesToData:
 
-  '''file_name = "../accese vs spente.zip"
-  # opening the zip file in READ mode
-  with zipfile.ZipFile(file_name, 'r') as zip:
-      zip.extractall('../')
-      print('Done!')
-
-
-
-  path = '../chinese'
-  try:
-      os.mkdir(path)
-  except OSError:
-      print ("Creation of the directory %s failed" % path)
-  else:
-      print ("Successfully created the directory %s " % path)
-  path = '../french'
-  try:
-      os.mkdir(path)
-  except OSError:
-      print ("Creation of the directory %s failed" % path)
-  else:
-      print ("Successfully created the directory %s " % path)
-  '''
   def get_dimensions(self,height, width):
     list_size = []
     list_size.append(math.floor((size - height)/2))
@@ -49,7 +27,10 @@ class ImagesToData:
   def manage_size(self,im):
     dimensions = im.shape
     while dimensions[0]>size or dimensions[1]>size:
-      im = cv2.resize(im,(int(dimensions[0]*0.9),int(dimensions[1]*0.9)),interpolation = cv2.INTER_AREA )
+      width = int(im.shape[1] * 0.9)
+      height = int(im.shape[0] * 0.9)
+      dim = (width, height)
+      im = cv2.resize(im, dim, interpolation = cv2.INTER_AREA )
       dimensions = im.shape
     return im
 
@@ -133,7 +114,7 @@ class ImagesToData:
 
   def mix(self):
     for i in range(300):
-      index = random.randint(0,len(self.chinese))
+      index = random.randint(0,len(self.chinese)-1)
       temp_chin = self.chinese[index]
       temp_chin_cat = self.chinese_categories[index]
       self.chinese.pop(index)
@@ -141,7 +122,7 @@ class ImagesToData:
       self.chinese_categories.pop(index)
       self.chinese_categories.append(temp_chin_cat)
     for i in range(300):
-      index = random.randint(0,len(self.french))
+      index = random.randint(0,len(self.french)-1)
       self.french.pop(index)
       self.french.append(temp_chin)
       self.french_categories.pop(index)
@@ -156,12 +137,17 @@ class ImagesToData:
 
 
   def __init__(self):
+    file_name = "../accese vs spente.zip"
+  # opening the zip file in READ mode
+    with zipfile.ZipFile(file_name, 'r') as zip:
+      zip.extractall('../')
+      print('Done!')
     self.chinese = []
     self.chinese_categories = []
     self.french = []
     self.french_categories = []
     self.fill_chinese()
     self.fill_french()
-    random.seed(11)
+    random.seed(time.time_ns())
     self.mix()
-
+    self.size = size
