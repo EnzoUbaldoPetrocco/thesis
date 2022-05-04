@@ -9,6 +9,22 @@ from sklearn.model_selection import GridSearchCV
 import manipulating_images
 from math import floor
 from sklearn.metrics import confusion_matrix
+import torch
+from torchvision import datasets
+from torchvision.transforms import ToTensor
+from torch.utils.data import DataLoader
+import torch.nn as nn
+from torch import optim
+import time
+from torch.autograd import Variable
+
+###########################################################
+##################### DEVICE ##############################
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+print(device)
+if torch.cuda.is_available():
+  print(torch.cuda.get_device_name(0))
+
 ############################################################
 ############### READ DATA ##################################
 
@@ -37,44 +53,79 @@ plt.figure()
 plt.imshow(np.reshape(CX[30], (itd.size,itd.size)))
 plt.show()
 ####################################################################
-################### NORMALIZE DATA #################################
-print('NORMALIZE DATA')
-scalerX = preprocessing.MinMaxScaler()
-CX = scalerX.fit_transform(CX)
-CXT = scalerX.transform(CXT)
+##################### LOADERS ######################################
+loaders = {
+    'train' : DataLoader(CX,
+                         batch_size = 100,
+                         shuffle = True,
+                         num_workers= 1),
+    'test'  : DataLoader(CXT,
+                         batch_size = 100,
+                         shuffle = True,
+                         num_workers= 1)
+}
+####################################################################
+##################### CNN ##########################################
+class CNN(nn.Module):
+  def __init__(self):
+    super(CNN,self).__init__()
+    self.conv1 = nn.Sequential(
+        nn.Conv2d(1,16,5,1,2),
+        nn.ReLU(),
+        nn.MaxPool2d(2))
+    self.conv2 = nn.Sequential(
+        nn.Conv2d(16,32,5,1,2),
+        nn.ReLU(),
+        nn.MaxPool2d(2))
+    self.out = nn.Linear(32*7*7,10)
+  def forward(self, x):
+    x = self.conv1(x)
+    x = self.conv2(x)
+    x = x.view(x.size(0),-1)
+    x = self.out(x)
+    return x
+cnn = CNN().to(device)
+###################################################################
+##################### LOSS FUNCTION ###############################
+loss_func = nn.CrossEntropyLoss()
 
-#####################################################################
-################### MODEL SELECTION (HYPERPARAMETER TUNING)##########
-print('MODEL SELECTION AND TUNING')
-Cgrid = {'C':        np.logspace(-4,3,5),
-        'kernel':   ['rbf'],
-        'gamma':    np.logspace(-4,3,5)}
-CMS = GridSearchCV(estimator = SVC(),
-                  param_grid = Cgrid,
-                  scoring = 'balanced_accuracy',
-                  cv = 10,
-                  verbose = 0)
-CH = CMS.fit(CX,CY)
+###################################################################
+####################### OPTIMIZER #################################
+optimizer = optim.Adam(cnn.parameters(),
+                      lr = 0.01)
 
-print('CLASSIFICATION')
-CM = SVC(C = CH.best_params_['C'],
-        kernel = CH.best_params_['kernel'],
-        gamma = CH.best_params_['gamma'])
-CM.fit(CX,CY)
+###################################################################
+####################### TRAINING ##################################
+def train(num_epoch, cnn, loaders):
+  cnn.train()
+  t = time.time()
+  for epoch in range(num_epoch):
+    for i, (img, labels) in enumerate(loaders['train']):
+      x = Variable(img).to(device)
+      y = Variable(labels).to(device)
+      output = cnn(x)
+      loss = loss_func(output,y)
+      optimizer.zero_grad()
+      loss.backward()
+      optimizer.step()
+      if (i+1)%100 == 0:
+        elapsed = time.time() - t 
+        print('Epoch: [{}/{}] - Batch: [{}/{}] - Loss: {:.4f} - Time: {:.1f}'.
+              format(epoch+1,num_epoch,i+1,len(loaders['train']),loss.item(),elapsed))
+        t = time.time()
+num_epoch = 10
+train(num_epoch,cnn,loaders)
 
-####################################################
-################## TESTING #########################
-print('Predicting Chinese test set')
-CYF = CM.predict(CXT)
-print(confusion_matrix(CYT,CYF))
+###################################################################
+####################### TEST ######################################
+actual_y_test = []
+predictes_y_test = []
+cnn.to('cpu')
+with torch.no_grad():
+  for (images, labels) in loaders['test']:
+    test_output = cnn(images)
+    pred_y = torch.max(test_output,1)[1].data.squeeze()
+    actual_y_test += labels.tolist()
+    predictes_y_test += pred_y.tolist()
+print(confusion_matrix(actual_y_test,predictes_y_test))
 
-print('Predicting French test set')
-CFYF = CM.predict(FXT)
-print(confusion_matrix(FYT,CFYF))
-
-print('PREDICTING MIX TEST SET')
-MCYF = CM.predict(MXT)
-print(confusion_matrix(MYT,MCYF))
-
-
-print('arrivato')
