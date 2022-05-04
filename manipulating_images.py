@@ -12,7 +12,7 @@ import pandas as pd
 import random
 import time
 
-size = 400
+size = 200
 
 class ImagesToData:
 
@@ -123,10 +123,12 @@ class ImagesToData:
       self.chinese_categories.append(temp_chin_cat)
     for i in range(300):
       index = random.randint(0,len(self.french)-1)
+      temp_fren = self.french[index]
+      temp_fren_cat = self.french_categories[index]
       self.french.pop(index)
-      self.french.append(temp_chin)
+      self.french.append(temp_fren)
       self.french_categories.pop(index)
-      self.french_categories.append(temp_chin_cat)
+      self.french_categories.append(temp_fren_cat)
     
     self.chinese = numpy.array(self.chinese)
     self.chinese_categories = numpy.array(self.chinese_categories)
@@ -134,7 +136,27 @@ class ImagesToData:
     self.french = numpy.array(self.french)
     self.french_categories = numpy.array(self.french_categories)
 
+  def mix_mixed_ds(self):
 
+    self.mixed = numpy.concatenate((self.chinese, self.french), axis=0)
+    self.mixed_categories = numpy.concatenate((self.chinese_categories, self.french_categories), axis = 0)
+
+    #self.mixed = self.mixed.tolist()
+    #self.mixed_categories = self.mixed_categories.tolist()
+
+    self.mixed = list(self.mixed)
+    self.mixed_categories = list(self.mixed_categories)
+    for i in range(300):
+      index = random.randint(0,len(self.french)-1)
+      temp_mix = self.mixed[index]
+      temp_mix_cat = self.mixed_categories[index]
+      self.mixed.pop(index)
+      self.mixed.append(temp_mix)
+      self.mixed_categories.pop(index)
+      self.mixed_categories.append(temp_mix_cat)
+
+    self.mixed = numpy.array(self.mixed)
+    self.mixed_categories = numpy.array(self.mixed_categories)
 
   def __init__(self):
     file_name = "../accese vs spente.zip"
@@ -150,4 +172,5 @@ class ImagesToData:
     self.fill_french()
     random.seed(time.time_ns())
     self.mix()
+    self.mix_mixed_ds()
     self.size = size

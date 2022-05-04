@@ -24,10 +24,10 @@ FXT = itd.french[floor(len(itd.french)*0.7):len(itd.french)-1]
 FY = itd.french_categories[0:floor(len(itd.french)*0.7)]
 FYT = itd.french_categories[floor(len(itd.french)*0.7):len(itd.french)-1]
 
-MX = np.concatenate((CX, FX), axis=0)
-MXT = np.concatenate((CXT, FXT), axis = 0)
-MY = np.concatenate((CY, FY), axis = 0)
-MYT = np.concatenate((CYT, FYT), axis=0)
+MX = itd.mixed[0:floor(len(itd.mixed)*0.7)]
+MXT = itd.mixed[floor(len(itd.mixed)*0.7):len(itd.mixed)-1]
+MY = itd.mixed_categories[0:floor(len(itd.mixed)*0.7)]
+MYT = itd.mixed_categories[floor(len(itd.mixed)*0.7):len(itd.mixed)-1]
 ####################################################################
 ###################### PLOT IMAGE ##################################
 print('PLOT IMAGE')
