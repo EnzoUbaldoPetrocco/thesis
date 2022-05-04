@@ -20,6 +20,7 @@ from torch.autograd import Variable
 
 ###########################################################
 ##################### DEVICE ##############################
+print('DEVICE')
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(device)
 if torch.cuda.is_available():
@@ -27,7 +28,7 @@ if torch.cuda.is_available():
 
 ############################################################
 ############### READ DATA ##################################
-
+print('READ DATA')
 itd = manipulating_images.ImagesToData()
 
 CX = itd.chinese[0:floor(len(itd.chinese)*0.7)]
@@ -54,6 +55,7 @@ plt.imshow(np.reshape(CX[30], (itd.size,itd.size)))
 plt.show()
 ####################################################################
 ##################### LOADERS ######################################
+print('LOADERS')
 loaders = {
     'train' : DataLoader(FX,
                          batch_size = 100,
@@ -66,6 +68,7 @@ loaders = {
 }
 ####################################################################
 ##################### CNN ##########################################
+print('CNN CLASS')
 class CNN(nn.Module):
   def __init__(self):
     super(CNN,self).__init__()
@@ -87,15 +90,18 @@ class CNN(nn.Module):
 cnn = CNN().to(device)
 ###################################################################
 ##################### LOSS FUNCTION ###############################
+print('LOSS FUNCTION')
 loss_func = nn.CrossEntropyLoss()
 
 ###################################################################
 ####################### OPTIMIZER #################################
+print('OPTIMIZER')
 optimizer = optim.Adam(cnn.parameters(),
                       lr = 0.01)
 
 ###################################################################
 ####################### TRAINING ##################################
+print('TRAINING')
 def train(num_epoch, cnn, loaders):
   cnn.train()
   t = time.time()
@@ -118,6 +124,7 @@ train(num_epoch,cnn,loaders)
 
 ###################################################################
 ####################### TEST ######################################
+print('TEST')
 actual_y_test = []
 predictes_y_test = []
 cnn.to('cpu')
