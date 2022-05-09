@@ -14,9 +14,10 @@ from torchvision import datasets
 from torchvision.transforms import ToTensor
 from torch.utils.data import DataLoader
 import torch.nn as nn
-from torch import optim
+from torch import optim, tensor
 import time
 from torch.autograd import Variable
+from PIL import Image
 
 ###########################################################
 ##################### DEVICE ##############################
@@ -30,7 +31,7 @@ if torch.cuda.is_available():
 ############### READ DATA ##################################
 print('READ DATA')
 itd = manipulating_images.ImagesToData()
-
+'''
 CX = itd.chinese[0:floor(len(itd.chinese)*0.7)]
 CXT = itd.chinese[floor(len(itd.chinese)*0.7):len(itd.chinese)-1]
 CY = itd.chinese_categories[0:floor(len(itd.chinese)*0.7)]
@@ -46,22 +47,53 @@ MX = itd.mixed[0:floor(len(itd.mixed)*0.7)]
 MXT = itd.mixed[floor(len(itd.mixed)*0.7):len(itd.mixed)-1]
 MY = itd.mixed_categories[0:floor(len(itd.mixed)*0.7)]
 MYT = itd.mixed_categories[floor(len(itd.mixed)*0.7):len(itd.mixed)-1]
+'''
+
+
+training_set = []
+test_set = []
+CX = []
+CY = []
+for i in range(len(itd.chinese)-1):
+  np.concatenate((CX, np.reshape(itd.chinese[i],(itd.size,itd.size))), axis=0)
+CX = ToTensor(CX)
+
+
+'''
+for i in range(floor(len(itd.chinese)*0.7)):
+  shaped = np.reshape(CX[i],(itd.size,itd.size))
+  im = Image.fromarray(np.uint8(shaped * 255) , 'L')
+  print(im)
+  tens = ToTensor()
+  tr = (tens,CY[i])
+  training_set.append(tr)
+test_set = []
+for i in range((floor(len(itd.chinese))),(len(itd.chinese)-1)):
+  shaped = np.reshape(CX[i],(itd.size,itd.size))
+  im = Image.fromarray(np.uint8(shaped * 255) , 'L')
+  tens = ToTensor(im)
+  ts = (tens,CY[i])
+  test_set.append(ts)
+'''
 
 ####################################################################
 ###################### PLOT IMAGE ##################################
 print('PLOT IMAGE')
 plt.figure()
-plt.imshow(np.reshape(CX[30], (itd.size,itd.size)))
+plt.imshow(np.reshape(training_set[30][0], (itd.size,itd.size)))
 plt.show()
 ####################################################################
 ##################### LOADERS ######################################
+#training_set = (CX, CY)
+#test_set = (CXT, CYT)
+
 print('LOADERS')
 loaders = {
-    'train' : DataLoader(CX,
+    'train' : DataLoader(training_set,
                          batch_size = 100,
                          shuffle = True,
                          num_workers= 1),
-    'test'  : DataLoader(CXT,
+    'test'  : DataLoader(test_set,
                          batch_size = 100,
                          shuffle = True,
                          num_workers= 1)
