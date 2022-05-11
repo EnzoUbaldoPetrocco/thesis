@@ -46,9 +46,9 @@ FXT = scalerX.transform(FXT)
 #####################################################################
 ################### MODEL SELECTION (HYPERPARAMETER TUNING)##########
 print('MODEL SELECTION AND TUNING')
-Fgrid = {'C':        np.logspace(-4,3,5),
+Fgrid = {'C':        np.logspace(-5,4,40),
         'kernel':   ['rbf'],
-        'gamma':    np.logspace(-4,3,5)}
+        'gamma':    np.logspace(-5,4,40)}
 FMS = GridSearchCV(estimator = SVC(),
                   param_grid = Fgrid,
                   scoring = 'balanced_accuracy',

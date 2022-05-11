@@ -48,9 +48,9 @@ MXT = scalerX.transform(MXT)
 #####################################################################
 ################### MODEL SELECTION (HYPERPARAMETER TUNING)##########
 print('MODEL SELECTION AND TUNING')
-Mgrid = {'C':        np.logspace(-4,3,5),
+Mgrid = {'C':        np.logspace(-5,4,40),
         'kernel':   ['rbf'],
-        'gamma':    np.logspace(-4,3,5)}
+        'gamma':    np.logspace(-5,4,40)}
 MMS = GridSearchCV(estimator = SVC(),
                   param_grid = Mgrid,
                   scoring = 'balanced_accuracy',

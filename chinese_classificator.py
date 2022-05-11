@@ -9,9 +9,9 @@ from sklearn.model_selection import GridSearchCV
 import manipulating_images_better
 from math import floor
 from sklearn.metrics import confusion_matrix
+
 ############################################################
 ############### READ DATA ##################################
-
 itd = manipulating_images_better.ImagesToData()
 itd.bf_ml()
 
@@ -47,9 +47,9 @@ CXT = scalerX.transform(CXT)
 #####################################################################
 ################### MODEL SELECTION (HYPERPARAMETER TUNING)##########
 print('MODEL SELECTION AND TUNING')
-Cgrid = {'C':        np.logspace(-4,3,5),
+Cgrid = {'C':        np.logspace(-5,4,40),
         'kernel':   ['rbf'],
-        'gamma':    np.logspace(-4,3,5)}
+        'gamma':    np.logspace(-5,4,40)}
 CMS = GridSearchCV(estimator = SVC(),
                   param_grid = Cgrid,
                   scoring = 'balanced_accuracy',

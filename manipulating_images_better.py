@@ -14,7 +14,7 @@ import time
 import os
 from PIL import Image
 
-size = 75
+size = 35
 
 class ImagesToData:
 
@@ -84,7 +84,7 @@ class ImagesToData:
     return images
 
   def save_images(self, list, path):
-    for i in range(len(list)):
+    for i in range(350):
       im = numpy.reshape(list[i], (self.size,self.size))
       im = Image.fromarray(numpy.uint8(im*255))
       im.save(path + '/im' + str(i) + '.jpeg')
@@ -126,6 +126,7 @@ class ImagesToData:
     self.french = numpy.concatenate((chinese_off, chinese_on),axis=0)
     self.chinese_categories = numpy.concatenate(((numpy.ones(len(chinese_off))*(-1)), numpy.ones(len(chinese_on))))
     self.french_categories = numpy.concatenate(((numpy.ones(len(french_off))*(-1)), numpy.ones(len(french_on))))
+    random.seed(time.time_ns())
     self.mix()
     self.mix_mixed_ds()
 
