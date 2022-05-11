@@ -6,13 +6,14 @@ import matplotlib.pyplot as plt
 from sklearn import preprocessing
 from sklearn.svm import SVC
 from sklearn.model_selection import GridSearchCV
-import manipulating_images
+import manipulating_images_better
 from math import floor
 from sklearn.metrics import confusion_matrix
 ############################################################
 ############### READ DATA ##################################
 
-itd = manipulating_images.ImagesToData()
+itd = manipulating_images_better.ImagesToData()
+itd.bf_ml()
 
 CX = itd.chinese[0:floor(len(itd.chinese)*0.7)]
 CXT = itd.chinese[floor(len(itd.chinese)*0.7):len(itd.chinese)-1]
