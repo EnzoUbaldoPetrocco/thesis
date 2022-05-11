@@ -14,7 +14,7 @@ import time
 import os
 from PIL import Image
 
-size = 100
+size = 75
 
 class ImagesToData:
 
@@ -103,7 +103,7 @@ class ImagesToData:
     with zipfile.ZipFile(file_name, 'r') as zip:
       zip.extractall('../')
       print('Done!')
-    #self.create_directories()
+    self.create_directories()
     self.chinese_off = self.acquire_modify_images('../accese vs spente/cinesi/')
     self.chinese_on = self.acquire_modify_images('../accese vs spente/cinesi accese/')
     self.french_off = self.acquire_modify_images('../accese vs spente/francesi/')
@@ -275,4 +275,4 @@ class ImagesToData:
 
 
 itd = ImagesToData()
-#itd.initial_routine()
+itd.initial_routine()
