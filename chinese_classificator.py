@@ -41,17 +41,25 @@ for i in range(30):
 
         ####################################################################
         ################### NORMALIZE DATA #################################
+        '''plt.figure()
+        plt.imshow(np.reshape(CX[30], (itd.size,itd.size)))
+        plt.show()
+
         print('NORMALIZE DATA')
         scalerX = preprocessing.MinMaxScaler()
         CX = scalerX.fit_transform(CX)
         CXT = scalerX.transform(CXT)
 
+        plt.figure()
+        plt.imshow(np.reshape(CX[30], (itd.size,itd.size)))
+        plt.show()'''
+
         #####################################################################
         ################### MODEL SELECTION (HYPERPARAMETER TUNING)##########
         print('MODEL SELECTION AND TUNING')
-        Cgrid = {'C':        np.logspace(-5,4,35),
+        Cgrid = {'C':        np.logspace(-4,4,34),
                 'kernel':   ['rbf'],
-                'gamma':    np.logspace(-5,4,35)}
+                'gamma':    np.logspace(-4,4,34)}
         CMS = GridSearchCV(estimator = SVC(),
                         param_grid = Cgrid,
                         scoring = 'balanced_accuracy',
@@ -60,6 +68,10 @@ for i in range(30):
         CH = CMS.fit(CX,CY)
 
         print('CLASSIFICATION')
+        print('C best param')
+        print(CH.best_params_['C'])
+        print('gamma best param')
+        print(CH.best_params_['gamma'])
         CM = SVC(C = CH.best_params_['C'],
                 kernel = CH.best_params_['kernel'],
                 gamma = CH.best_params_['gamma'])

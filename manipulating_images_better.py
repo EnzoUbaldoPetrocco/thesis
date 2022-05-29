@@ -84,7 +84,7 @@ class ImagesToData:
     return images
 
   def save_images(self, list, path):
-    for i in range(350):
+    for i in range(370):
       im = numpy.reshape(list[i], (self.size,self.size))
       im = Image.fromarray(numpy.uint8(im*255))
       im.save(path + '/im' + str(i) + '.jpeg')

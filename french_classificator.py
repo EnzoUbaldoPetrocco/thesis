@@ -42,17 +42,17 @@ for i in range(30):
 
         ####################################################################
         ################### NORMALIZE DATA #################################
-        print('NORMALIZE DATA')
-        scalerX = preprocessing.MinMaxScaler()
-        FX = scalerX.fit_transform(FX)
-        FXT = scalerX.transform(FXT)
+        #print('NORMALIZE DATA')
+        #scalerX = preprocessing.MinMaxScaler()
+        #FX = scalerX.fit_transform(FX)
+        #FXT = scalerX.transform(FXT)
 
         #####################################################################
         ################### MODEL SELECTION (HYPERPARAMETER TUNING)##########
         print('MODEL SELECTION AND TUNING')
-        Fgrid = {'C':        np.logspace(-5,4,35),
+        Fgrid = {'C':        np.logspace(-4,4,34),
                 'kernel':   ['rbf'],
-                'gamma':    np.logspace(-5,4,35)}
+                'gamma':    np.logspace(-4,4,34)}
         FMS = GridSearchCV(estimator = SVC(),
                         param_grid = Fgrid,
                         scoring = 'balanced_accuracy',
@@ -60,6 +60,11 @@ for i in range(30):
                         verbose = 0)
         FH = FMS.fit(FX,FY)
         print('CLASSIFICATION')
+        print('C best param')
+        print(FH.best_params_['C'])
+        print('gamma best param')
+        print(FH.best_params_['gamma'])
+
         FM = SVC(C = FH.best_params_['C'],
                 kernel = FH.best_params_['kernel'],
                 gamma = FH.best_params_['gamma'])

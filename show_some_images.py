@@ -24,7 +24,11 @@ MX = itd.mixed[0:floor(len(itd.mixed)*0.7)]
 MXT = itd.mixed[floor(len(itd.mixed)*0.7):len(itd.mixed)-1]
 MY = itd.mixed_categories[0:floor(len(itd.mixed)*0.7)]
 MYT = itd.mixed_categories[floor(len(itd.mixed)*0.7):len(itd.mixed)-1]
-
+####################################################################
+#######################PRINT SOME IMAGE VALUE#######################
+for i in FX:
+    for j in i:
+        print(j)
 ####################################################################
 ###################### PLOT IMAGE ##################################
 print('PLOT IMAGE RANDOM')
@@ -32,7 +36,7 @@ random.seed(int(time.time_ns()))
 plt.figure()
 plt.imshow(np.reshape(CX[random.randint(0,len(CX))], (itd.size,itd.size)))
 plt.show()
-plt.figure()
+'''plt.figure()
 plt.imshow(np.reshape(FX[random.randint(0,len(FX))], (itd.size,itd.size)))
 plt.show()
 plt.figure()
@@ -46,4 +50,4 @@ plt.imshow(np.reshape(FXT[random.randint(0,len(FXT))], (itd.size,itd.size)))
 plt.show()
 plt.figure()
 plt.imshow(np.reshape(MXT[random.randint(0,len(MXT))], (itd.size,itd.size)))
-plt.show()
+plt.show()'''

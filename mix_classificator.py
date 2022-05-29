@@ -42,17 +42,17 @@ for i in range(30):
         
         ####################################################################
         ################### NORMALIZE DATA #################################
-        print('NORMALIZE DATA')
-        scalerX = preprocessing.MinMaxScaler()
-        MX = scalerX.fit_transform(MX)
-        MXT = scalerX.transform(MXT)
+        #print('NORMALIZE DATA')
+        #scalerX = preprocessing.MinMaxScaler()
+        #MX = scalerX.fit_transform(MX)
+        #MXT = scalerX.transform(MXT)
 
         #####################################################################
         ################### MODEL SELECTION (HYPERPARAMETER TUNING)##########
         print('MODEL SELECTION AND TUNING')
-        Mgrid = {'C':        np.logspace(-5,4,40),
+        Mgrid = {'C':        np.logspace(-4,4,34),
                 'kernel':   ['rbf'],
-                'gamma':    np.logspace(-5,4,40)}
+                'gamma':    np.logspace(-4,4,34)}
         MMS = GridSearchCV(estimator = SVC(),
                         param_grid = Mgrid,
                         scoring = 'balanced_accuracy',
@@ -61,6 +61,11 @@ for i in range(30):
         MH = MMS.fit(MX,MY)
 
         print('CLASSIFICATION')
+        print('C best param')
+        print(MH.best_params_['C'])
+        print('gamma best param')
+        print(MH.best_params_['gamma'])
+
         MM = SVC(C = MH.best_params_['C'],
                 kernel = MH.best_params_['kernel'],
                 gamma = MH.best_params_['gamma'])
