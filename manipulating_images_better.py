@@ -84,7 +84,7 @@ class ImagesToData:
     return images
 
   def save_images(self, list, path):
-    for i in range(370):
+    for i in range(420):
       im = numpy.reshape(list[i], (self.size,self.size))
       im = Image.fromarray(numpy.uint8(im*255))
       im.save(path + '/im' + str(i) + '.jpeg')
@@ -171,7 +171,6 @@ class ImagesToData:
       self.chinese_categories.append(1)
     
     return self.chinese
-
 
   def fill_french(self):
     global french, french_categories

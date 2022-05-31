@@ -50,9 +50,9 @@ for i in range(30):
         #####################################################################
         ################### MODEL SELECTION (HYPERPARAMETER TUNING)##########
         print('MODEL SELECTION AND TUNING')
-        Fgrid = {'C':        np.logspace(-4,4,34),
+        Fgrid = {'C':        np.logspace(-1,5,30),
                 'kernel':   ['rbf'],
-                'gamma':    np.logspace(-4,4,34)}
+                'gamma':    np.logspace(-5,1,30)}
         FMS = GridSearchCV(estimator = SVC(),
                         param_grid = Fgrid,
                         scoring = 'balanced_accuracy',
