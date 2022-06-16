@@ -41,18 +41,12 @@ for i in range(30):
 
         ####################################################################
         ################### NORMALIZE DATA #################################
-        '''plt.figure()
-        plt.imshow(np.reshape(CX[30], (itd.size,itd.size)))
-        plt.show()
-
+        '''
         print('NORMALIZE DATA')
         scalerX = preprocessing.MinMaxScaler()
         CX = scalerX.fit_transform(CX)
         CXT = scalerX.transform(CXT)
-
-        plt.figure()
-        plt.imshow(np.reshape(CX[30], (itd.size,itd.size)))
-        plt.show()'''
+        '''
 
         #####################################################################
         ################### MODEL SELECTION (HYPERPARAMETER TUNING)##########
@@ -66,12 +60,13 @@ for i in range(30):
                         cv = 10,
                         verbose = 0)
         CH = CMS.fit(CX,CY)
-
+        
         print('CLASSIFICATION')
         print('C best param')
         print(CH.best_params_['C'])
         print('gamma best param')
         print(CH.best_params_['gamma'])
+
         CM = SVC(C = CH.best_params_['C'],
                 kernel = CH.best_params_['kernel'],
                 gamma = CH.best_params_['gamma'])
@@ -79,6 +74,7 @@ for i in range(30):
 
         ####################################################
         ################## TESTING #########################
+
         print('PREDICTING CHINESE TEST SET')
         CYF = CM.predict(CXT)
         cm = confusion_matrix(CYT,CYF)
@@ -94,6 +90,7 @@ for i in range(30):
         cm = confusion_matrix(MYT,MCYF)
         print(cm)
         Mcm_list.append(cm)
+
 
 ######################################################
 ###################### RESULTS #######################

@@ -34,11 +34,11 @@ for i in range(30):
         FY = itd.french_categories[0:floor(len(itd.french)*0.7)]
         FYT = itd.french_categories[floor(len(itd.french)*0.7):len(itd.french)-1]
 
+
         MX = itd.mixed[0:floor(len(itd.mixed)*0.7)]
         MXT = itd.mixed[floor(len(itd.mixed)*0.7):len(itd.mixed)-1]
         MY = itd.mixed_categories[0:floor(len(itd.mixed)*0.7)]
         MYT = itd.mixed_categories[floor(len(itd.mixed)*0.7):len(itd.mixed)-1]
-        
 
         ####################################################################
         ################### NORMALIZE DATA #################################
@@ -59,6 +59,7 @@ for i in range(30):
                         cv = 10,
                         verbose = 0)
         FH = FMS.fit(FX,FY)
+        
         print('CLASSIFICATION')
         print('C best param')
         print(FH.best_params_['C'])

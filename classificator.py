@@ -6,151 +6,207 @@ import matplotlib.pyplot as plt
 from sklearn import preprocessing
 from sklearn.svm import SVC
 from sklearn.model_selection import GridSearchCV
-import manipulating_images
+from torch import logspace
+import manipulating_images_better
 from math import floor
 from sklearn.metrics import confusion_matrix
-############################################################
-############### READ DATA ##################################
-'''ix = range(0,247)
-iy = 247
-L = pd.read_csv('drive/MyDrive/Didattica/VariousDatasets/CRIME/L.csv')
-T = pd.read_csv('drive/MyDrive/Didattica/VariousDatasets/CRIME/T.csv')
-L = L.to_numpy()
-T = T.to_numpy()
 
-X = L[:,ix]
-Y = L[:,iy]
-XT = T[:,ix]
-YT = T[:,iy]'''
-'''
-## CDS stands for chinese dataset, FDS stands for french dataset
-CDS = pd.read_csv('./chinese/chinese.csv').to_numpy()
-FDS = pd.read_csv('./french/french.csv').to_numpy()
+class SVCClassificator:
 
-## I need to exctract casually 70% of samples for training set and 30% of dataset for test set
-## This must be done for both datasets
-random.seed(11)
+    def __init__(self, ds_selection = "", kernel= ""):
+        self.ds_selection = ds_selection
+        self.kernel = kernel
 
-##Chinese part
-test_CDS = []
-for i in CDS:
-    test_CDS.append(i)
-percentage_chinese = len(CDS)
-percentage_chinese_training = int(percentage_chinese * 0.7)
-percentage_chinese_test = percentage_chinese - percentage_chinese_training
-print(test_CDS[2][0])
-print(type(test_CDS[2][0]))
-#decode_string_matrix.MatrixDecoder.decoder(test_CDS[2][0])
-#print(decode_string_matrix.MatrixDecoder.decoder(test_CDS[2][0]))
-#training set
-CX = []
-CXT = []
-CY = []
-CYT = []
-count = 0
-for i in range(0,percentage_chinese_training):
-    index = random.randint(0,percentage_chinese-count)
-    #TCDS.append(test_CDS[index])
-    CX.append(test_CDS[index][0])
-    CX.append(test_CDS[index][1])
-    test_CDS.pop(index)
-    count = count +1
-for i in range(0,len(test_CDS)):
-    CY.append(test_CDS[i][0].to_numpy())
-    CYT.append(test_CDS[i][1])
+    def execute(self):
+        # Confusion matrix lists
+        Ccm_list = []
+        Fcm_list = []
+        Mcm_list = []
 
-## French part
-test_FDS = []
-for i in FDS:
-    test_FDS.append(i)
-percentage_french = len(FDS)
-percentage_french_training = int(percentage_french * 0.7)
-percentage_french_test = percentage_french - percentage_french_training
-#training set
+        for i in range(30):
+                print('CICLE: ' + str(i))
 
-FX = []
-FY = []
-FXT = []
-FYT = []
+                ############################################################
+                ############### READ DATA ##################################
+                itd = manipulating_images_better.ImagesToData()
+                itd.bf_ml()
 
-count = 0
-for i in range(0,percentage_french_training):
-    index = random.randint(0,percentage_french-count)
-    FX.append(test_FDS[index][0].to_numpy())
-    FX.append(test_FDS[index][1])
-    test_FDS.pop(index)
-    count = count +1
+                CX = itd.chinese[0:floor(len(itd.chinese)*0.7)]
+                CXT = itd.chinese[floor(len(itd.chinese)*0.7):len(itd.chinese)-1]
+                CY = itd.chinese_categories[0:floor(len(itd.chinese)*0.7)]
+                CYT = itd.chinese_categories[floor(len(itd.chinese)*0.7):len(itd.chinese)-1]
 
-for i in range(0,len(test_CDS)):
-    FY.append(test_CDS[i][0].to_numpy())
-    FYT.append(test_CDS[i][1])
-
-'''
-
-itd = manipulating_images.ImagesToData()
-
-CX = itd.chinese[0:floor(len(itd.chinese)*0.7)]
-CXT = itd.chinese[floor(len(itd.chinese)*0.7):len(itd.chinese)-1]
-CY = itd.chinese_categories[0:floor(len(itd.chinese)*0.7)]
-CYT = itd.chinese_categories[floor(len(itd.chinese)*0.7):len(itd.chinese)-1]
-
-FX = itd.french[0:floor(len(itd.french)*0.7)]
-FXT = itd.french[floor(len(itd.french)*0.7):len(itd.french)-1]
-FY = itd.french_categories[0:floor(len(itd.french)*0.7)]
-FYT = itd.french_categories[floor(len(itd.french)*0.7):len(itd.french)-1]
+                FX = itd.french[0:floor(len(itd.french)*0.7)]
+                FXT = itd.french[floor(len(itd.french)*0.7):len(itd.french)-1]
+                FY = itd.french_categories[0:floor(len(itd.french)*0.7)]
+                FYT = itd.french_categories[floor(len(itd.french)*0.7):len(itd.french)-1]
 
 
-
-####################################################################
-################### NORMALIZE DATA #################################
-
-scalerX = preprocessing.MinMaxScaler()
-CX = scalerX.fit_transform(CX)
-CXT = scalerX.transform(CXT)
-FX = scalerX.fit_transform(FX)
-FXT = scalerX.transform(FXT)
-
-#####################################################################
-################### MODEL SELECTION (HYPERPARAMETER TUNING)##########
-Cgrid = {'C':        np.logspace(-4,3,5),
-        'kernel':   ['rbf'],
-        'gamma':    np.logspace(-4,3,5)}
-CMS = GridSearchCV(estimator = SVC(),
-                  param_grid = Cgrid,
-                  scoring = 'balanced_accuracy',
-                  cv = 10,
-                  verbose = 0)
-CH = CMS.fit(CX,CY)
+                MX = itd.mixed[0:floor(len(itd.mixed)*0.7)]
+                MXT = itd.mixed[floor(len(itd.mixed)*0.7):len(itd.mixed)-1]
+                MY = itd.mixed_categories[0:floor(len(itd.mixed)*0.7)]
+                MYT = itd.mixed_categories[floor(len(itd.mixed)*0.7):len(itd.mixed)-1]
 
 
-Fgrid = {'C':        np.logspace(-4,3,5),
-        'kernel':   ['rbf'],
-        'gamma':    np.logspace(-4,3,5)}
-FMS = GridSearchCV(estimator = SVC(),
-                  param_grid = Fgrid,
-                  scoring = 'balanced_accuracy',
-                  cv = 10,
-                  verbose = 0)
-FH = FMS.fit(FX,FY)
+                #####################################################################
+                ################### MODEL SELECTION (HYPERPARAMETER TUNING)##########
+                print('MODEL SELECTION AND TUNING')
+                if self.kernel == 'rbf':
+                    logspaceC = np.logspace(-1,5,33)
+                    logspaceGamma = np.logspace(-5,1,33)
+                if self.kernel == 'linear':
+                    logspaceC = np.logspace(-2,4,33)
+                    logspaceGamma = np.logspace(-2,4,33)
+                grid = {'C':        logspaceC,
+                        'kernel':   [self.kernel],
+                        'gamma':    logspaceGamma}
+                MS = GridSearchCV(estimator = SVC(),
+                                param_grid = grid,
+                                scoring = 'balanced_accuracy',
+                                cv = 10,
+                                verbose = 0)
+                if self.ds_selection == "chinese":
+                    H = MS.fit(CX,CY)
+                if self.ds_selection == "french":
+                    H = MS.fit(FX,FY)
+                if self.ds_selection == "mix":
+                    H = MS.fit(MX,MY)
+                
+                print('CLASSIFICATION')
+                print('C best param')
+                print(H.best_params_['C'])
+                print('gamma best param')
+                print(H.best_params_['gamma'])
+
+                M = SVC(C = H.best_params_['C'],
+                        kernel = H.best_params_['kernel'],
+                        gamma = H.best_params_['gamma'])
+
+                if self.ds_selection == "chinese":
+                    M = MS.fit(CX,CY)
+                if self.ds_selection == "french":
+                    M = MS.fit(FX,FY)
+                if self.ds_selection == "mix":
+                    M = MS.fit(MX,MY)
+                ####################################################
+                ################## TESTING #########################
+
+                print('PREDICTING CHINESE TEST SET')
+                CYF = M.predict(CXT)
+                cm = confusion_matrix(CYT,CYF)
+                print(cm)
+                Ccm_list.append(cm)
+                print('Predicting FRENCH TEST SET')
+                CFYF = M.predict(FXT)
+                cm = confusion_matrix(FYT,CFYF)
+                print(cm)
+                Fcm_list.append(cm)
+                print('PREDICTING MIX TEST SET')
+                MYF = M.predict(MXT)
+                cm = confusion_matrix(MYT,MYF)
+                print(cm)
+                Mcm_list.append(cm)
 
 
-CM = SVC(C = CH.best_params_['C'],
-        kernel = CH.best_params_['kernel'],
-        gamma = CH.best_params_['gamma'])
-CM.fit(CX,CY)
+        ######################################################
+        ###################### RESULTS #######################
+        print('RESULTS')
+        def calculate_percentage_confusion_matrix(confusion_matrix_list, tot):
+                pcms = []
+                for i in confusion_matrix_list:
+                        true_negative = (i[0,0]/tot)*100
+                        false_negative = (i[1,0]/tot)*100
+                        true_positive = (i[1,1]/tot)*100
+                        false_positive = (i[0,1]/tot)*100
+                        pcm = np.array([[true_negative , false_positive],[false_negative, true_positive]])
+                        pcms.append(pcm)
+                return pcms
 
-FM = SVC(C = FH.best_params_['C'],
-        kernel = FH.best_params_['kernel'],
-        gamma = FH.best_params_['gamma'])
-FM.fit(FX,FY)
+        def return_tot_elements(cm):
+                tot = cm[0,0] + cm[0,1] + cm[1,0] + cm[1,1]
+                return tot
 
-####################################################
-################## TESTING #########################
+        def return_statistics_pcm(pcms):
+                max_true_negative = 0
+                max_false_negative = 0
+                max_true_positive = 0
+                max_false_positive = 0
+                min_true_negative = 100
+                min_false_negative = 100
+                min_true_positive = 100
+                min_false_positive = 100
+                count_true_negative = 0
+                count_false_negative = 0
+                count_true_positive = 0
+                count_false_positive = 0
+                for i in pcms:
+                        true_negative = i[0,0]
+                        false_negative = i[1,0]
+                        true_positive = i[1,1]
+                        false_positive = i[0,1]
 
-CYF = CM.predict(CXT)
-confusion_matrix(CYT,CYF)
+                        count_true_negative += true_negative
+                        count_false_negative += false_negative
+                        count_false_positive += false_positive
+                        count_true_positive += true_positive
 
-FYF = FM.predict(FXT)
-confusion_matrix(FYT,FYF)
+                        if true_negative > max_true_negative:
+                                max_true_negative = true_negative
+                        if false_negative > max_false_negative:
+                                max_false_negative = false_negative
+                        if true_positive > max_true_positive:
+                                max_true_positive = true_positive
+                        if false_positive > max_false_positive:
+                                max_false_positive = false_positive
 
-print('arrivato')
+                        if true_negative < min_true_negative:
+                                min_true_negative = true_negative
+                        if false_negative < min_false_negative:
+                                min_false_negative = false_negative
+                        if true_positive < min_true_positive:
+                                min_true_positive = true_positive
+                        if false_positive < min_false_positive:
+                                min_false_positive = false_positive
+                
+                mean_true_negative = count_true_negative/len(pcms)
+                mean_false_negative = count_false_negative/len(pcms)
+                mean_true_positive = count_true_positive/len(pcms)
+                mean_false_positive = count_false_positive/len(pcms)
+
+                mean_matrix = np.array([[mean_true_negative, mean_false_positive],[mean_false_negative, mean_true_positive]])
+                max_matrix = np.array([[max_true_negative, max_false_positive],[max_false_negative, max_true_positive]])
+                min_matrix = np.array([[min_true_negative, min_false_positive],[min_false_negative, min_true_positive]])
+
+                matrix = []
+                matrix.append(mean_matrix)
+                matrix.append(max_matrix)
+                matrix.append(min_matrix)
+                return matrix
+                        
+
+
+        Ctot = return_tot_elements(Ccm_list[0])
+        Ccm_list = calculate_percentage_confusion_matrix(Ccm_list, Ctot)
+
+
+        Ftot = return_tot_elements(Fcm_list[0])
+        Fcm_list = calculate_percentage_confusion_matrix(Fcm_list, Ftot)
+
+        Mtot = return_tot_elements(Mcm_list[0])
+        Mcm_list = calculate_percentage_confusion_matrix(Mcm_list, Mtot)
+
+        statistic_C = return_statistics_pcm(Ccm_list)
+        statistic_F = return_statistics_pcm(Fcm_list)
+        statistic_M = return_statistics_pcm(Mcm_list)
+
+        print(statistic_C)
+        print(statistic_F)
+        print(statistic_M)
+
+
+        ####################################################################
+        ###################### PLOT IMAGE ##################################
+        print('PLOT IMAGE')
+        plt.figure()
+        plt.imshow(np.reshape(CX[30], (itd.size,itd.size)))
+        plt.show()

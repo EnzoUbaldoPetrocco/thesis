@@ -3,6 +3,7 @@
 from turtle import width
 import zipfile
 import pathlib
+from httplib2 import FailedToDecompressContent
 import numpy
 from skimage.color import rgb2gray
 import cv2
@@ -14,8 +15,8 @@ import time
 import os
 from PIL import Image
 
-size = 35
-n_images = 350
+size = 45
+n_images = 400
 
 class ImagesToData:
 
@@ -33,7 +34,10 @@ class ImagesToData:
       width = int(im.shape[1] * 0.95)
       height = int(im.shape[0] * 0.95)
       dim = (width, height)
-      im = cv2.resize(im, dim, interpolation = cv2.INTER_AREA )
+      try:
+        im = cv2.resize(im, dim, interpolation = cv2.INTER_AREA )
+      except:
+        print(dim)
       dimensions = im.shape
     return im
 
@@ -98,13 +102,14 @@ class ImagesToData:
       list.append(temp)
     return list
 
-  def initial_routine(self):
+  def initial_routine(self, create_directory):
     file_name = "../accese vs spente.zip"
   # opening the zip file in READ mode
     with zipfile.ZipFile(file_name, 'r') as zip:
       zip.extractall('../')
       print('Done!')
-    #self.create_directories()
+    if create_directory:
+      self.create_directories()
     random.seed(time.time_ns())
     self.chinese_off = self.acquire_modify_images('../accese vs spente/cinesi/')
     self.chinese_on = self.acquire_modify_images('../accese vs spente/cinesi accese/')
@@ -165,12 +170,9 @@ class ImagesToData:
     self.mixed = numpy.concatenate((self.chinese, self.french), axis=0)
     self.mixed_categories = numpy.concatenate((self.chinese_categories, self.french_categories), axis = 0)
 
-    #self.mixed = self.mixed.tolist()
-    #self.mixed_categories = self.mixed_categories.tolist()
-
     self.mixed = list(self.mixed)
     self.mixed_categories = list(self.mixed_categories)
-    for i in range(99999):
+    for i in range(9999999):
       index = random.randint(0,len(self.mixed)-1)
       temp_mix = self.mixed[index]
       temp_mix_cat = self.mixed_categories[index]
@@ -182,7 +184,7 @@ class ImagesToData:
     self.mixed = numpy.array(self.mixed)
     self.mixed_categories = numpy.array(self.mixed_categories)
 
-  def __init__(self):
+  def __init__(self, initialize = False, create_directory = False):
     
     self.size = size
     self.chinese = []
@@ -191,9 +193,11 @@ class ImagesToData:
     self.french_categories = []
     self.mixed = []
     self.mixed_categories = []
-    random.seed(7)
+    if initialize:
+      self.initial_routine(create_directory)
+    
     
 
 
-itd = ImagesToData()
+itd = ImagesToData(False, True)
 #itd.initial_routine()
