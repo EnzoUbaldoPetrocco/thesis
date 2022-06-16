@@ -15,8 +15,8 @@ import time
 import os
 from PIL import Image
 
-size = 45
-n_images = 400
+size = 38
+n_images = 375
 
 class ImagesToData:
 
@@ -30,14 +30,18 @@ class ImagesToData:
 
   def manage_size(self,im):
     dimensions = im.shape
+    im_try = im
     while dimensions[0]>size or dimensions[1]>size:
-      width = int(im.shape[1] * 0.95)
-      height = int(im.shape[0] * 0.95)
+      width = int(im.shape[1] * 0.9)
+      height = int(im.shape[0] * 0.9)
       dim = (width, height)
       try:
         im = cv2.resize(im, dim, interpolation = cv2.INTER_AREA )
       except:
         print(dim)
+        plt.figure()
+        plt.imshow(im_try)
+        plt.show()
       dimensions = im.shape
     return im
 
