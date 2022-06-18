@@ -57,9 +57,9 @@ class SVCClassificator:
                 if self.kernel == 'linear':
                     logspaceC = np.logspace(-2,4,33)
                     logspaceGamma = np.logspace(-2,4,33)
-                grid = {'C':        logspaceC,
+                grid = {'C':        np.logspace(-2,4,42),
                         'kernel':   [self.kernel],
-                        'gamma':    logspaceGamma}
+                        'gamma':    np.logspace(-2,4,42)}
                 MS = GridSearchCV(estimator = SVC(),
                                 param_grid = grid,
                                 scoring = 'balanced_accuracy',

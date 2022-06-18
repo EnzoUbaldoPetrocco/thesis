@@ -15,8 +15,8 @@ import time
 import os
 from PIL import Image
 
-size = 38
-n_images = 375
+size = 35
+n_images = 350
 
 class ImagesToData:
 

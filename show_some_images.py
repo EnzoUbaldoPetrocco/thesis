@@ -2,13 +2,14 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-import manipulating_images
+import manipulating_images_better
 from math import floor
 import random
 import time
 ############################################################
 ############### READ DATA ##################################
-itd = manipulating_images.ImagesToData()
+itd = manipulating_images_better.ImagesToData()
+itd.bf_ml()
 
 CX = itd.chinese[0:floor(len(itd.chinese)*0.7)]
 CXT = itd.chinese[floor(len(itd.chinese)*0.7):len(itd.chinese)-1]
@@ -36,7 +37,7 @@ random.seed(int(time.time_ns()))
 plt.figure()
 plt.imshow(np.reshape(CX[random.randint(0,len(CX))], (itd.size,itd.size)))
 plt.show()
-'''plt.figure()
+plt.figure()
 plt.imshow(np.reshape(FX[random.randint(0,len(FX))], (itd.size,itd.size)))
 plt.show()
 plt.figure()
@@ -50,4 +51,4 @@ plt.imshow(np.reshape(FXT[random.randint(0,len(FXT))], (itd.size,itd.size)))
 plt.show()
 plt.figure()
 plt.imshow(np.reshape(MXT[random.randint(0,len(MXT))], (itd.size,itd.size)))
-plt.show()'''
+plt.show()

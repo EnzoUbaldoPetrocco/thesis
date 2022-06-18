@@ -55,9 +55,9 @@ class RFCClassificator:
                 rfc=RandomForestClassifier(random_state=42)
 
                 param_grid = { 
-                    'n_estimators': [200, 500],
+                    'n_estimators': [200, 300, 400, 500],
                     'max_features': ['auto', 'sqrt', 'log2'],
-                    'max_depth' : [4,5,6,7,8],
+                    'max_depth' : [4,5,6,7,8,9,10,11],
                     'criterion' :['gini', 'entropy']
                     }
                 
