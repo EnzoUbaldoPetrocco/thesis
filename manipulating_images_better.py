@@ -15,8 +15,8 @@ import time
 import os
 from PIL import Image
 
-size = 35
-n_images = 350
+size = 40
+total_n_images = 470
 
 class ImagesToData:
 
@@ -93,7 +93,7 @@ class ImagesToData:
     return images
 
   def save_images(self, list, path):
-    for i in range(n_images):
+    for i in range(total_n_images):
       im = numpy.reshape(list[i], (self.size,self.size))
       im = Image.fromarray(numpy.uint8(im*255))
       im.save(path + '/im' + str(i) + '.jpeg')
@@ -139,7 +139,7 @@ class ImagesToData:
     self.french_categories = numpy.concatenate(((numpy.ones(len(french_off))*(-1)), numpy.ones(len(french_on))))
     random.seed(time.time_ns())
     self.mix()
-    self.mix_mixed_ds()
+    self.prepare_ds()
 
   def mix(self):
     self.chinese = list(self.chinese)
@@ -169,24 +169,45 @@ class ImagesToData:
     self.french = numpy.array(self.french)
     self.french_categories = numpy.array(self.french_categories)
 
-  def mix_mixed_ds(self):
+  def prepare_ds(self):
 
-    self.mixed = numpy.concatenate((self.chinese, self.french), axis=0)
-    self.mixed_categories = numpy.concatenate((self.chinese_categories, self.french_categories), axis = 0)
+    self.chinese = list(self.chinese)
+    self.french = list(self.french)
+    self.chinese_categories = list(self.chinese_categories)
+    self.french_categories = list(self.french_categories)
 
-    self.mixed = list(self.mixed)
-    self.mixed_categories = list(self.mixed_categories)
-    for i in range(9999999):
-      index = random.randint(0,len(self.mixed)-1)
-      temp_mix = self.mixed[index]
-      temp_mix_cat = self.mixed_categories[index]
-      self.mixed.pop(index)
-      self.mixed.append(temp_mix)
-      self.mixed_categories.pop(index)
-      self.mixed_categories.append(temp_mix_cat)
+    self.CX = self.chinese[0 : 252]
+    self.CY = self.chinese_categories[0 : 252]
+    self.CXT  = self.chinese[253 : 360]
+    self.CYT = self.chinese_categories[253 : 360]
+    self.MXT = self.chinese[361 : 469]
+    self.MYT = self.chinese_categories[361 : 469]
 
-    self.mixed = numpy.array(self.mixed)
-    self.mixed_categories = numpy.array(self.mixed_categories)
+
+    self.FX = self.french[0 : 252]
+    self.FY = self.french_categories[0 : 252]
+    self.FXT  = self.french[253 : 360]
+    self.FYT = self.french_categories[253 : 360]
+    self.MXT = numpy.concatenate((self.MXT, self.french[361 : 469]), axis = 0)
+    self.MYT = numpy.concatenate((self.MYT, self.french_categories[361 : 469]), axis = 0)
+    self.MX = numpy.concatenate((self.CX, self.FX), axis=0)
+    self.MY = numpy.concatenate((self.CY, self.FY), axis=0)
+
+    self.CX = numpy.array(self.CX)
+    self.CY = numpy.array(self.CY)
+    self.CXT = numpy.array(self.CXT)
+    self.CYT = numpy.array(self.CYT)
+
+    self.FX = numpy.array(self.FX)
+    self.FY = numpy.array(self.FY)
+    self.FXT = numpy.array(self.FXT)
+    self.FYT = numpy.array(self.FYT)
+    
+    self.MX = numpy.array(self.MX)
+    self.MY = numpy.array(self.MY)
+    self.MXT = numpy.array(self.MXT)
+    self.MYT = numpy.array(self.MYT)
+
 
   def __init__(self, initialize = False, create_directory = False):
     

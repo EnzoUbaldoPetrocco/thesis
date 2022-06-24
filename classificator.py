@@ -31,35 +31,35 @@ class SVCClassificator:
                 itd = manipulating_images_better.ImagesToData()
                 itd.bf_ml()
 
-                CX = itd.chinese[0:floor(len(itd.chinese)*0.7)]
-                CXT = itd.chinese[floor(len(itd.chinese)*0.7):len(itd.chinese)-1]
-                CY = itd.chinese_categories[0:floor(len(itd.chinese)*0.7)]
-                CYT = itd.chinese_categories[floor(len(itd.chinese)*0.7):len(itd.chinese)-1]
+                CX = itd.CX
+                CXT = itd.CXT
+                CY = itd.CY
+                CYT = itd.CYT
 
-                FX = itd.french[0:floor(len(itd.french)*0.7)]
-                FXT = itd.french[floor(len(itd.french)*0.7):len(itd.french)-1]
-                FY = itd.french_categories[0:floor(len(itd.french)*0.7)]
-                FYT = itd.french_categories[floor(len(itd.french)*0.7):len(itd.french)-1]
+                FX = itd.FX
+                FXT = itd.FXT
+                FY = itd.FY
+                FYT = itd.FYT
 
 
-                MX = itd.mixed[0:floor(len(itd.mixed)*0.7)]
-                MXT = itd.mixed[floor(len(itd.mixed)*0.7):len(itd.mixed)-1]
-                MY = itd.mixed_categories[0:floor(len(itd.mixed)*0.7)]
-                MYT = itd.mixed_categories[floor(len(itd.mixed)*0.7):len(itd.mixed)-1]
+                MX = itd.MX
+                MXT = itd.MXT
+                MY = itd.MY
+                MYT = itd.MYT
 
 
                 #####################################################################
                 ################### MODEL SELECTION (HYPERPARAMETER TUNING)##########
                 print('MODEL SELECTION AND TUNING')
                 if self.kernel == 'rbf':
-                    logspaceC = np.logspace(-1,5,33)
-                    logspaceGamma = np.logspace(-5,1,33)
+                    logspaceC = np.logspace(-2,4,43)
+                    logspaceGamma = np.logspace(-2,4,43)
                 if self.kernel == 'linear':
-                    logspaceC = np.logspace(-2,4,33)
-                    logspaceGamma = np.logspace(-2,4,33)
-                grid = {'C':        np.logspace(-2,4,42),
+                    logspaceC = np.logspace(-2,4,45)
+                    logspaceGamma = np.logspace(-2,4,45)
+                grid = {'C':        logspaceC,
                         'kernel':   [self.kernel],
-                        'gamma':    np.logspace(-2,4,42)}
+                        'gamma':    logspaceGamma}
                 MS = GridSearchCV(estimator = SVC(),
                                 param_grid = grid,
                                 scoring = 'balanced_accuracy',
