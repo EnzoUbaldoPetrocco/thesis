@@ -53,9 +53,11 @@ class RFCClassificator:
                 print('MODEL SELECTION AND TUNING')
 
                 rfc=RandomForestClassifier(random_state=42)
-
+                logspace_n_estimators = []
+                for i in np.logspace(0,3,35):
+                    logspace_n_estimators.append(int(i))
                 param_grid = { 
-                    'n_estimators': np.logspace(0,3,45),
+                    'n_estimators': logspace_n_estimators,
                     'max_features': ['auto', 'sqrt', 'log2'],
                     'max_depth' : [1,3,5,7,9,11, 13],
                     'criterion' :['gini', 'entropy']
