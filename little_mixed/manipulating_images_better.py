@@ -130,10 +130,10 @@ class ImagesToData:
     self.save_images(self.french_on, '../' + str(self.size) + '/francesi accese')
 
   def bf_ml(self):
-    chinese_off = self.acquire_images('../' + str(self.size) + '/cinesi')
-    chinese_on = self.acquire_images('../' + str(self.size) + '/cinesi accese')
-    french_off = self.acquire_images('../' + str(self.size) + '/francesi')
-    french_on = self.acquire_images('../' + str(self.size) + '/francesi accese')
+    chinese_off = self.acquire_images('../../' + str(self.size) + '/cinesi')
+    chinese_on = self.acquire_images('../../' + str(self.size) + '/cinesi accese')
+    french_off = self.acquire_images('../../' + str(self.size) + '/francesi')
+    french_on = self.acquire_images('../../' + str(self.size) + '/francesi accese')
     self.chinese = numpy.concatenate((chinese_off, chinese_on),axis=0)
     self.french = numpy.concatenate((french_off, french_on),axis=0)
     self.chinese_categories = numpy.concatenate(((numpy.ones(len(chinese_off))*(-1)), numpy.ones(len(chinese_on))))
@@ -210,23 +210,25 @@ class ImagesToData:
     self.MYT = numpy.array(self.MYT)
 
   def little_mix(self):
-    self.MCX = self.CX
-    self.MCY = self.CY
+    self.MCX = list(self.CX)
+    self.MCY = list(self.CY)
 
-    self.MFX = self.FX
-    self.MFY = self.FY
-
+    self.MFX = list(self.FX)
+    self.MFY = list(self.FY)
     for i in range(10):
-      index = random.randint(0,len(self.chinese)-1)
+      index = random.randint(0,len(self.FX)-11)
       self.MCX.append(self.FX[index])
       self.MCY.append(self.FY[index])
 
     for i in range(10):
-      index = random.randint(0,len(self.chinese)-1)
+      index = random.randint(0,len(self.FX)-11)
       self.MFX.append(self.CX[index])
       self.MFY.append(self.CY[index])
 
-    
+    self.MCX = numpy.array(self.MCX)
+    self.MCY = numpy.array(self.MCY)
+    self.MFX = numpy.array(self.MFX)
+    self.MFY = numpy.array(self.MFY)
 
 
     
@@ -247,5 +249,5 @@ class ImagesToData:
     
 
 
-itd = ImagesToData(True, True)
+itd = ImagesToData(False, True)
 #itd.initial_routine()
