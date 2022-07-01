@@ -14,6 +14,7 @@ import random
 import time
 import os
 from PIL import Image
+from torch import randint
 
 size = 35
 total_n_images = 470
@@ -207,6 +208,28 @@ class ImagesToData:
     self.MY = numpy.array(self.MY)
     self.MXT = numpy.array(self.MXT)
     self.MYT = numpy.array(self.MYT)
+
+  def little_mix(self):
+    self.MCX = self.CX
+    self.MCY = self.CY
+
+    self.MFX = self.FX
+    self.MFY = self.FY
+
+    for i in range(10):
+      index = randint(0,len(self.FX)-1)
+      self.MCX.append(self.FX[index])
+      self.MCY.append(self.FY[index])
+
+    for i in range(10):
+      index = randint(0,len(self.CX)-1)
+      self.MFX.append(self.CX[index])
+      self.MFY.append(self.CY[index])
+
+    
+
+
+    
 
 
   def __init__(self, initialize = False, create_directory = False):
