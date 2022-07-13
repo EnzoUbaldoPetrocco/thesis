@@ -198,8 +198,11 @@ class SVCClassificator:
         statistic_F = return_statistics_pcm(Fcm_list)
         statistic_M = return_statistics_pcm(Mcm_list)
 
+        print('CHINESE')
         print(statistic_C)
+        print('FRENCH')
         print(statistic_F)
+        print('MIX')
         print(statistic_M)
 
 

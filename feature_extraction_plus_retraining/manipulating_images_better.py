@@ -3,7 +3,6 @@
 from turtle import width
 import zipfile
 import pathlib
-from httplib2 import FailedToDecompressContent
 import numpy
 from skimage.color import rgb2gray
 import cv2
