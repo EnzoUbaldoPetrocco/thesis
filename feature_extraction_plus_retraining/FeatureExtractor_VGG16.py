@@ -14,6 +14,9 @@ from keras.callbacks import ReduceLROnPlateau, ModelCheckpoint, EarlyStopping
 import tensorflow as tf
 from skimage.color import gray2rgb
 
+
+
+
 BATCH_SIZE = 1
 
 def batch_generator(X, Y, batch_size = BATCH_SIZE):
@@ -31,6 +34,22 @@ def batch_generator(X, Y, batch_size = BATCH_SIZE):
 
 class FeatureExtractor:
     def __init__(self, ds_selection = ""):
+
+        gpus = tf.config.experimental.list_physical_devices('GPU')
+        if gpus:
+        # Restrict TensorFlow to only allocate 1GB of memory on the first GPU
+            try:
+                tf.config.experimental.set_virtual_device_configuration(
+                    gpus[0],
+                    [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=1024)])
+                logical_gpus = tf.config.experimental.list_logical_devices('GPU')
+                print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
+            except RuntimeError as e:
+                # Virtual devices must be set before GPUs have been initialized
+                print(e)
+        else:
+            print('no gpus')
+
         self.ds_selection = ds_selection
         itd = manipulating_images_better.ImagesToData()
         itd.bf_ml()
@@ -65,7 +84,7 @@ class FeatureExtractor:
         #checkpoint = ModelCheckpoint('vgg16_finetune.h15', monitor= 'val_accuracy', mode= 'max', save_best_only = True, verbose= 0)
         early = EarlyStopping(monitor='binary_accuracy', min_delta=0.001, patience=9, verbose=1, mode='auto')
         
-        learning_rate= 5e-4
+        learning_rate= 1e-3
 
         model.compile(loss="binary_crossentropy", optimizer='sgd', metrics=["binary_accuracy"])
         #history = model.fit(X_train, y_train, batch_size = 1, epochs=50, validation_data=(X_test,y_test), callbacks=[lr_reduce,checkpoint])
@@ -75,7 +94,7 @@ class FeatureExtractor:
         y_train = []
         y_test = []
 
-        prop = 1/3
+        prop = 1/6
 
         if self.ds_selection == "chinese":
             
