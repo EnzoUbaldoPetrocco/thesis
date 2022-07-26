@@ -130,10 +130,10 @@ class ImagesToData:
     self.save_images(self.french_on, '../' + str(self.size) + '/francesi accese')
 
   def bf_ml(self):
-    chinese_off = self.acquire_images('../../' + str(self.size) + '/cinesi')
-    chinese_on = self.acquire_images('../../' + str(self.size) + '/cinesi accese')
-    french_off = self.acquire_images('../../' + str(self.size) + '/francesi')
-    french_on = self.acquire_images('../../' + str(self.size) + '/francesi accese')
+    chinese_off = self.acquire_images('../' + str(self.size) + '/cinesi')
+    chinese_on = self.acquire_images('../' + str(self.size) + '/cinesi accese')
+    french_off = self.acquire_images('../' + str(self.size) + '/francesi')
+    french_on = self.acquire_images('../' + str(self.size) + '/francesi accese')
     self.chinese = numpy.concatenate((chinese_off, chinese_on),axis=0)
     self.french = numpy.concatenate((french_off, french_on),axis=0)
     self.chinese_categories = numpy.concatenate(((numpy.ones(len(chinese_off))*(-1)), numpy.ones(len(chinese_on))))

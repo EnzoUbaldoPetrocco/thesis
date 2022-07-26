@@ -70,13 +70,49 @@ class FeatureExtractor:
         MXT = itd.MXT
         MY = itd.MY
         MYT = itd.MYT
+
+        batch_size = 1
+
+        datagen = ImageDataGenerator(
+            featurewise_center=True,
+            featurewise_std_normalization=True,
+            rotation_range=20,
+            width_shift_range=0.2,
+            height_shift_range=0.2,
+            horizontal_flip=True,
+            validation_split=0.2)
+        chinese = datagen.flow_from_directory('../../FE/chinese',
+            target_size = (itd.size, itd.size),
+            batch_size = batch_size,
+            class_mode = 'binary',
+            subset = 'training')
+
+        chinese_val = datagen.flow_from_directory('../../FE/chinese',
+            target_size = (itd.size, itd.size),
+            batch_size = batch_size,
+            class_mode = 'binary',
+            subset = 'validation')
+
+        french = datagen.flow_from_directory('../../FE/french',
+            target_size = (itd.size, itd.size),
+            batch_size = batch_size,
+            class_mode = 'binary',
+            subset = 'training')
+
+        french_val = datagen.flow_from_directory('../../FE/french',
+            target_size = (itd.size, itd.size),
+            batch_size = batch_size,
+            class_mode = 'binary',
+            subset = 'validation')
+
+        
         
         #model = VGG16(weights='imagenet', include_top=False,  input_shape=(itd.size,itd.size,3))
         model = ResNet50(weights='imagenet', include_top=False,  input_shape=(itd.size,itd.size,3))
         ####################################################################################
         ######################## RETRAINING  ###############################################
         print('RETRAINING')
-        batch_size = 1
+        
         ep = 20
         # Freeze four convolution blocks
         for layer in model.layers[:len(model.layers)-1]:
@@ -103,106 +139,24 @@ class FeatureExtractor:
 
         if self.ds_selection == "chinese":
             print('chinese')
-            for (x, y) in zip(CX[0:int(len(CX)*(prop)*(prop_dsts))],  
-            CY[0:int(len(CY)*(prop)*(prop_dsts))]):
-                
-                x = np.reshape(x, (itd.size,itd.size))
-                x = gray2rgb(x)
-
-                X_train.append(x)
-                y_train.append(y)
-
-            for (xt, yt) in zip(CX[int(len(CX)*(prop)*(prop_dsts)):int(len(CX)*(prop))], 
-            CY[int(len(CY)*(prop)*(prop_dsts)):int(len(CY)*(prop))]):
-
-                xt = np.reshape(xt, (itd.size,itd.size))
-                xt = gray2rgb(xt)
-                X_test.append(xt)
-                y_test.append(yt)
-
-            y_train = np.array(y_train)
-            y_test = np.array(y_test)
-            X_train = np.array(X_train)
-            X_test = np.array(X_test)
+            
 
 
-            X_train = batch_generator(X_train, y_train, batch_size= batch_size)
-            X_test =  batch_generator(X_test, y_test, batch_size= batch_size)
-
-
-            history = model.fit(X_train, batch_size = batch_size, epochs=ep, validation_data=X_test, callbacks=[early, lr_reduce], verbose=1)
+            history = model.fit(chinese, batch_size = batch_size, epochs=ep, validation_data=chinese_val, callbacks=[early, lr_reduce],steps_per_epoch= int(len(CX)), verbose=0)
             
         if self.ds_selection == "french":
             print('french')
-            for (x, y) in zip(FX[0:int(len(FX)*(prop)*(prop_dsts))],  
-            FY[0:int(len(FY)*(prop)*(prop_dsts))]):
-                
-                x = np.reshape(x, (itd.size,itd.size))
-                x = gray2rgb(x)
 
-                X_train.append(x)
-                y_train.append(y)
-
-            for (xt, yt) in zip(FX[int(len(FX)*(prop)*(prop_dsts)):int(len(FX)*(prop))], 
-            FY[int(len(FY)*(prop)*(prop_dsts)):int(len(FY)*(prop))]):
-
-                xt = np.reshape(xt, (itd.size,itd.size))
-                xt = gray2rgb(xt)
-                X_test.append(xt)
-                y_test.append(yt)
-
-            y_train = np.array(y_train)
-            y_test = np.array(y_test)
-            X_train = np.array(X_train)
-            X_test = np.array(X_test)
-
-            X_train = batch_generator(X_train, y_train, batch_size= batch_size)
-            X_test =  batch_generator(X_test, y_test, batch_size= batch_size)
-
-
-            history = model.fit(X_train, batch_size = batch_size, epochs=ep, validation_data=X_test, callbacks=[early, lr_reduce], verbose=1)
+            history = model.fit(french, batch_size = batch_size, epochs=ep, validation_data=french_val, callbacks=[early, lr_reduce], verbose=1)
             
         if self.ds_selection == "mix":
             print('mix')
-            for (x, y) in zip(MX[0:int(len(MX)*(prop)*(prop_dsts))],  
-            MY[0:int(len(MY)*(prop)*(prop_dsts))]):
-                
-                x = np.reshape(x, (itd.size,itd.size))
-                x = gray2rgb(x)
 
-                X_train.append(x)
-                y_train.append(y)
+            dataset = tf.data.Dataset.zip((chinese, french))
+            dataset_val = tf.data.Dataset.zip((chinese_val, french_val))
 
-            for (xt, yt) in zip(MX[int(len(MX)*(prop)*(3/4)):int(len(MX)*(prop))], 
-            MY[int(len(MY)*(prop)*(prop_dsts)):int(len(MY)*(prop))]):
-
-                xt = np.reshape(xt, (itd.size,itd.size))
-                xt = gray2rgb(xt)
-                X_test.append(xt)
-                y_test.append(yt)
-
-            y_train = np.array(y_train)
-            y_test = np.array(y_test)
-            X_train = np.array(X_train)
-            X_test = np.array(X_test)
-
-
-            print(np.shape(X_train))
-            print(np.shape(X_test))
-
-
-            X_train = batch_generator(X_train, y_train, batch_size= batch_size)
-            X_test =  batch_generator(X_test, y_test, batch_size= batch_size)
-
-
-            history = model.fit(X_train, batch_size = batch_size, epochs=ep, validation_data=X_test, callbacks=[early, lr_reduce], verbose=1)
+            history = model.fit(dataset, batch_size = batch_size, epochs=ep, validation_data=dataset_val, callbacks=[early, lr_reduce], verbose=1)
             
-        CX = CX[int(len(CX)*(prop)): len(CX)-1]
-        CY = CY[int(len(CY)*(prop)): len(CY)-1]
-        FX = FX[int(len(FX)*(prop)): len(FX)-1]
-        FY = FY[int(len(FY)*(prop)): len(FY)-1]
-        MX = MX[int(len(MX)*(prop)): len(MX)-1]
-        MY = MY[int(len(MY)*(prop)): len(MY)-1]
 
         
 
