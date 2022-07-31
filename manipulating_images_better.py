@@ -3,7 +3,6 @@
 from turtle import width
 import zipfile
 import pathlib
-from httplib2 import FailedToDecompressContent
 import numpy
 from skimage.color import rgb2gray
 import cv2
@@ -16,7 +15,7 @@ import os
 from PIL import Image
 from torch import randint
 
-size = 33
+size = 200
 total_n_images = 470
 
 class ImagesToData:
@@ -31,10 +30,11 @@ class ImagesToData:
 
   def manage_size(self,im):
     dimensions = im.shape
+    rate = 0.9
     im_try = im
     while dimensions[0]>size or dimensions[1]>size:
-      width = int(im.shape[1] * 0.9)
-      height = int(im.shape[0] * 0.9)
+      width = int(im.shape[1] * rate)
+      height = int(im.shape[0] * rate)
       dim = (width, height)
       try:
         im = cv2.resize(im, dim, interpolation = cv2.INTER_AREA )
@@ -75,9 +75,13 @@ class ImagesToData:
         paths.extend(pathlib.Path(path).glob(typ))
     #sorted_ima = sorted([x for x in paths])
     for i in paths:
-      im = cv2.imread(str(i))
-      im = self.modify_images(im)
-      images.append(im)
+      try:
+        im = cv2.imread(str(i))
+        #assert not isinstance(image,type(None))
+        im = self.modify_images(im)
+        images.append(im)
+      except:
+        print('Image is None')
     return images
 
   def acquire_images(self,path):
@@ -86,11 +90,16 @@ class ImagesToData:
     paths = []
     for typ in types:
         paths.extend(pathlib.Path(path).glob(typ))
+
     #sorted_ima = sorted([x for x in paths])
     for i in paths:
-      im = cv2.imread(str(i))
-      im = self.modify_images(im)
-      images.append(im)
+      try:
+        im = cv2.imread(str(i))
+        assert not isinstance(image,type(None))
+        im = self.modify_images(im)
+        images.append(im)
+      except:
+        print('Image is None')
     return images
 
   def save_images(self, list, path):
@@ -110,16 +119,16 @@ class ImagesToData:
   def initial_routine(self, create_directory):
     file_name = "../accese vs spente.zip"
   # opening the zip file in READ mode
-    with zipfile.ZipFile(file_name, 'r') as zip:
+    '''with zipfile.ZipFile(file_name, 'r') as zip:
       zip.extractall('../')
-      print('Done!')
+      print('Done!')'''
     if create_directory:
       self.create_directories()
     random.seed(time.time_ns())
-    self.chinese_off = self.acquire_modify_images('../accese vs spente/cinesi/')
-    self.chinese_on = self.acquire_modify_images('../accese vs spente/cinesi accese/')
-    self.french_off = self.acquire_modify_images('../accese vs spente/francesi/')
-    self.french_on = self.acquire_modify_images('../accese vs spente/francesi accese/')
+    self.chinese_off = self.acquire_modify_images('../accese vs spente/cinesi')
+    self.chinese_on = self.acquire_modify_images('../accese vs spente/cinesi accese')
+    self.french_off = self.acquire_modify_images('../accese vs spente/francesi')
+    self.french_on = self.acquire_modify_images('../accese vs spente/francesi accese')
     self.chinese_off = self.mix_list(self.chinese_off)
     self.chinese_on = self.mix_list(self.chinese_on)
     self.french_off = self.mix_list(self.french_off)
@@ -247,5 +256,5 @@ class ImagesToData:
     
 
 
-itd = ImagesToData(False, True)
+itd = ImagesToData(True, True)
 #itd.initial_routine()

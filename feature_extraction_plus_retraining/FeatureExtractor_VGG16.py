@@ -1,10 +1,14 @@
 #! /usr/bin/env python3
-from curses.panel import new_panel
-from tabnanny import verbose
+from audioop import rms
+from unicodedata import name
 import manipulating_images_better
 import numpy as np
 from tensorflow.keras.applications.resnet50 import ResNet50
 from tensorflow.keras.applications.vgg16 import VGG16
+from tensorflow.keras.applications.vgg19 import VGG19
+from tensorflow.keras.applications.xception import Xception
+from tensorflow.keras.applications.inception_v3 import InceptionV3
+from tensorflow.keras.applications.inception_resnet_v2 import InceptionResNetV2
 from tensorflow.keras.preprocessing import image
 from tensorflow.keras.applications.vgg16 import preprocess_input
 import cv2
@@ -13,11 +17,19 @@ from keras import layers, models, Model, optimizers
 from keras.callbacks import ReduceLROnPlateau, ModelCheckpoint, EarlyStopping
 import tensorflow as tf
 from skimage.color import gray2rgb
-
-
+from matplotlib import pyplot as plt
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Dense
+from keras.layers import Input, Lambda, Dense, Flatten,Dropout
+from keras.models import Sequential
 
 
 BATCH_SIZE = 1
+
+def to_grayscale_then_rgb(image):
+    image = tf.image.rgb_to_grayscale(image)
+    image = tf.image.grayscale_to_rgb(image)
+    return image
 
 def batch_generator(X, Y, batch_size = BATCH_SIZE):
     indices = np.arange(len(X)) 
@@ -35,25 +47,8 @@ def batch_generator(X, Y, batch_size = BATCH_SIZE):
 class FeatureExtractor:
     def __init__(self, ds_selection = ""):
 
-        gpus = tf.config.experimental.list_physical_devices('GPU')
-        if gpus:
-        # Restrict TensorFlow to only allocate 1GB of memory on the first GPU
-            try:
-                tf.config.experimental.set_virtual_device_configuration(
-                    gpus[0],
-                    [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=1024)])
-                logical_gpus = tf.config.experimental.list_logical_devices('GPU')
-                print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
-            except RuntimeError as e:
-                # Virtual devices must be set before GPUs have been initialized
-                print(e)
-        else:
-            print('no gpus')
-
-        print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
-
         self.ds_selection = ds_selection
-        itd = manipulating_images_better.ImagesToData()
+        itd = manipulating_images_better.ImagesToData(ds_selection = self.ds_selection)
         itd.bf_ml()
 
         CX = itd.CX
@@ -70,144 +65,260 @@ class FeatureExtractor:
         MXT = itd.MXT
         MY = itd.MY
         MYT = itd.MYT
-        
+
+        batch_size = 8
+        batch_fit = 8
+
+        validation_split = 0.3
+
+        chindatagen = ImageDataGenerator(
+            validation_split=validation_split,
+            rescale=1/255,
+    preprocessing_function=to_grayscale_then_rgb)
+
+        chinvaldatagen = ImageDataGenerator(
+            validation_split=validation_split,
+            rescale=1/255,
+    preprocessing_function=to_grayscale_then_rgb)
+
+        frendatagen = ImageDataGenerator(
+            validation_split=validation_split,
+            rescale=1/255,
+    preprocessing_function=to_grayscale_then_rgb)
+
+        frenvaldatagen = ImageDataGenerator(
+            validation_split=validation_split,
+            rescale=1/255,
+    preprocessing_function=to_grayscale_then_rgb)
+
+        ######################################################################################
+        ############################# MODEL GENERATION #######################################
         #model = VGG16(weights='imagenet', include_top=False,  input_shape=(itd.size,itd.size,3))
-        model = ResNet50(weights='imagenet', include_top=False,  input_shape=(itd.size,itd.size,3))
-        ####################################################################################
-        ######################## RETRAINING  ###############################################
-        print('RETRAINING')
-        batch_size = 1
-        ep = 20
+        model_pre = InceptionV3(weights='imagenet', include_top=False,  input_shape=(itd.size,itd.size,3))
+        # Create the model
+        model = Sequential()
+        # Add the vgg convolutional base model
+        model.add(model_pre)
+        model.trainable = False
+        model.summary()
+        # Add new layers
+        model.add(Flatten())
+        model.add(Dense(550, activation='relu'))
+        model.add(Dropout(0.6))
+        model.add(Dense(200, activation='relu', name = 'feature_extractor'))
+        model.add(Dropout(0.6))
+        model.add(Dense(1, activation='sigmoid'))
+        # Show a summary of the model. Check the number of trainable parameters
         # Freeze four convolution blocks
-        for layer in model.layers[:len(model.layers)-1]:
+        model.trainable = True
+        for layer in model.layers[:len(model.layers)-5]:
             layer.trainable = False
+        model.summary()
 
-
-        lr_reduce = ReduceLROnPlateau(monitor='binary_accuracy', factor=0.6, patience=6, verbose=1, mode='max', min_lr=5e-5)
-        #checkpoint = ModelCheckpoint('vgg16_finetune.h15', monitor= 'val_accuracy', mode= 'max', save_best_only = True, verbose= 0)
-        early = EarlyStopping(monitor='binary_accuracy', min_delta=0.001, patience=9, verbose=1, mode='auto')
+        ####################################################################################
+        ###################### TRAINING LAST LAYERS AND FINE TUNING ########################
+        print('RETRAINING')
         
-        learning_rate= 1e-5
+        ep = 30
+        eps_fine = 30
+        
+        lr_reduce = ReduceLROnPlateau(monitor='accuracy', factor=0.2, patience=4, verbose=1, mode='max', min_lr=1e-8)
+        #checkpoint = ModelCheckpoint('vgg16_finetune.h15', monitor= 'val_accuracy', mode= 'max', save_best_only = True, verbose= 0)
+        early = EarlyStopping(monitor='accuracy', min_delta=0.001, patience=16, verbose=1, mode='auto')
+        
+        learning_rate= 1e-4
+        learning_rate_fine = 1e-5
+        '''lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
+            initial_learning_rate=1e-2,
+            decay_steps=10000,
+            decay_rate=0.9)
+        sgd = tf.keras.optimizers.SGD(learning_rate=lr_schedule)'''
+        adam = optimizers.Adam(learning_rate)
+        sgd = tf.keras.optimizers.SGD(learning_rate)
+        rmsprop = tf.keras.optimizers.RMSprop(learning_rate)
+        adadelta = tf.keras.optimizers.Adadelta(learning_rate)
+        adagrad = tf.keras.optimizers.Adagrad(learning_rate)
+        adamax = tf.keras.optimizers.Adamax(learning_rate)
 
-        model.compile(loss="binary_crossentropy", optimizer=optimizers.Adam(learning_rate), metrics=["binary_accuracy"])
+        model.compile(loss="binary_crossentropy", optimizer=rmsprop, metrics=["accuracy"])
         #history = model.fit(X_train, y_train, batch_size = 1, epochs=50, validation_data=(X_test,y_test), callbacks=[lr_reduce,checkpoint])
-
-        X_train = []
-        X_test = []
-        y_train = []
-        y_test = []
-
-        prop = 1/22
-
-        prop_dsts = 0.8
-
+        
+        
         if self.ds_selection == "chinese":
             print('chinese')
-            for (x, y) in zip(CX[0:int(len(CX)*(prop)*(prop_dsts))],  
-            CY[0:int(len(CY)*(prop)*(prop_dsts))]):
-                
-                x = np.reshape(x, (itd.size,itd.size))
-                x = gray2rgb(x)
+            chinese = chindatagen.flow_from_directory('../../FE/' + ds_selection + '/chinese',
+            target_size = (itd.size, itd.size),
+            batch_size = batch_size,
+            color_mode = 'rgb',
+            class_mode = 'binary',
+            subset = 'training')
 
-                X_train.append(x)
-                y_train.append(y)
+            chinese_val = chinvaldatagen.flow_from_directory('../../FE/' + ds_selection + '/chinese',
+            target_size = (itd.size, itd.size),
+            batch_size = batch_size,
+            class_mode = 'binary',
+            color_mode = 'rgb',
+            subset = 'validation')
 
-            for (xt, yt) in zip(CX[int(len(CX)*(prop)*(prop_dsts)):int(len(CX)*(prop))], 
-            CY[int(len(CY)*(prop)*(prop_dsts)):int(len(CY)*(prop))]):
+            '''for i in chinese:
+                plt.figure()
+                plt.imshow(i[0][0])
+                plt.show()'''
+            
 
-                xt = np.reshape(xt, (itd.size,itd.size))
-                xt = gray2rgb(xt)
-                X_test.append(xt)
-                y_test.append(yt)
+            Number_Of_Training_Images = chinese.classes.shape[0]
+            steps_per_epoch = Number_Of_Training_Images/batch_size
 
-            y_train = np.array(y_train)
-            y_test = np.array(y_test)
-            X_train = np.array(X_train)
-            X_test = np.array(X_test)
+            history = model.fit(chinese, 
+            #batch_size = batch_size, 
+            epochs=ep, validation_data=chinese_val, 
+            #steps_per_epoch = steps_per_epoch,
+            callbacks=[early, lr_reduce],verbose=1)
 
-
-            X_train = batch_generator(X_train, y_train, batch_size= batch_size)
-            X_test =  batch_generator(X_test, y_test, batch_size= batch_size)
-
-
-            history = model.fit(X_train, batch_size = batch_size, epochs=ep, validation_data=X_test, callbacks=[early, lr_reduce], verbose=1)
+            model.trainable = True
+            model.summary()
+            rmsprop = tf.keras.optimizers.RMSprop(learning_rate_fine)
+            model.compile(loss="binary_crossentropy", optimizer=rmsprop, metrics=["accuracy"])
+            
+            history = model.fit(chinese, 
+            #batch_size = batch_size, 
+            epochs=eps_fine, validation_data=chinese_val, 
+            #steps_per_epoch = steps_per_epoch,
+            callbacks=[early, lr_reduce],verbose=1)
+            
             
         if self.ds_selection == "french":
             print('french')
-            for (x, y) in zip(FX[0:int(len(FX)*(prop)*(prop_dsts))],  
-            FY[0:int(len(FY)*(prop)*(prop_dsts))]):
-                
-                x = np.reshape(x, (itd.size,itd.size))
-                x = gray2rgb(x)
+            french = frendatagen.flow_from_directory('../../FE/' + ds_selection + '/french',
+            target_size = (itd.size, itd.size),
+            batch_size = batch_size,
+            class_mode = 'binary',
+            color_mode = 'grayscale',
+            subset = 'training')
 
-                X_train.append(x)
-                y_train.append(y)
+            french_val = frenvaldatagen.flow_from_directory('../../FE/' + ds_selection + '/french',
+            target_size = (itd.size, itd.size),
+            batch_size = batch_size,
+            class_mode = 'binary',
+            color_mode = "grayscale",
+            subset = 'validation')
 
-            for (xt, yt) in zip(FX[int(len(FX)*(prop)*(prop_dsts)):int(len(FX)*(prop))], 
-            FY[int(len(FY)*(prop)*(prop_dsts)):int(len(FY)*(prop))]):
+            Number_Of_Training_Images = french.classes.shape[0]
+            steps_per_epoch = Number_Of_Training_Images/batch_size
 
-                xt = np.reshape(xt, (itd.size,itd.size))
-                xt = gray2rgb(xt)
-                X_test.append(xt)
-                y_test.append(yt)
+            history = model.fit(french,  
+            #steps_per_epoch = steps_per_epoch,
+            #batch_size = batch_size, 
+            epochs=ep, validation_data=french_val, callbacks=[early, lr_reduce], verbose=0)
 
-            y_train = np.array(y_train)
-            y_test = np.array(y_test)
-            X_train = np.array(X_train)
-            X_test = np.array(X_test)
-
-            X_train = batch_generator(X_train, y_train, batch_size= batch_size)
-            X_test =  batch_generator(X_test, y_test, batch_size= batch_size)
-
-
-            history = model.fit(X_train, batch_size = batch_size, epochs=ep, validation_data=X_test, callbacks=[early, lr_reduce], verbose=1)
+            model.trainable = True
+            model.summary()
+            rmsprop = tf.keras.optimizers.RMSprop(learning_rate_fine)
+            model.compile(loss="binary_crossentropy", optimizer=rmsprop, metrics=["accuracy"])
+            
+            history = model.fit(chinese, 
+            #batch_size = batch_size, 
+            epochs=eps_fine, validation_data=chinese_val, 
+            #steps_per_epoch = steps_per_epoch,
+            callbacks=[early, lr_reduce],verbose=1)
             
         if self.ds_selection == "mix":
             print('mix')
-            for (x, y) in zip(MX[0:int(len(MX)*(prop)*(prop_dsts))],  
-            MY[0:int(len(MY)*(prop)*(prop_dsts))]):
-                
-                x = np.reshape(x, (itd.size,itd.size))
-                x = gray2rgb(x)
+            chinese = chindatagen.flow_from_directory('../../FE/' + ds_selection + '/chinese',
+            target_size = (itd.size, itd.size),
+            batch_size = batch_size,
+            class_mode = 'binary',
+            color_mode = "grayscale",
+            subset = 'training')
 
-                X_train.append(x)
-                y_train.append(y)
+            chinese_val = chinvaldatagen.flow_from_directory('../../FE/' + ds_selection + '/chinese',
+            target_size = (itd.size, itd.size),
+            batch_size = batch_size,
+            class_mode = 'binary',
+            color_mode = "grayscale",
+            subset = 'validation')
 
-            for (xt, yt) in zip(MX[int(len(MX)*(prop)*(3/4)):int(len(MX)*(prop))], 
-            MY[int(len(MY)*(prop)*(prop_dsts)):int(len(MY)*(prop))]):
+            french = frendatagen.flow_from_directory('../../FE/' + ds_selection + '/french',
+            target_size = (itd.size, itd.size),
+            batch_size = batch_size,
+            class_mode = 'binary',
+            color_mode = "grayscale",
+            subset = 'training')
 
-                xt = np.reshape(xt, (itd.size,itd.size))
-                xt = gray2rgb(xt)
-                X_test.append(xt)
-                y_test.append(yt)
+            french_val = frenvaldatagen.flow_from_directory('../../FE/' + ds_selection + '/french',
+            target_size = (itd.size, itd.size),
+            batch_size = batch_size,
+            class_mode = 'binary',
+            color_mode = "grayscale",
+            subset = 'validation')
 
-            y_train = np.array(y_train)
-            y_test = np.array(y_test)
-            X_train = np.array(X_train)
-            X_test = np.array(X_test)
+            dataset = tf.data.Dataset.zip((chinese, french))
+            dataset_val = tf.data.Dataset.zip((chinese_val, french_val))
 
+            Number_Of_Training_Images = dataset.classes.shape[0]
+            steps_per_epoch = Number_Of_Training_Images/batch_size
 
-            print(np.shape(X_train))
-            print(np.shape(X_test))
+            history = model.fit(dataset,  
+            #steps_per_epoch = steps_per_epoch,
+            #batch_size = batch_size, 
+            epochs=eps_fine, validation_data=dataset_val, callbacks=[early, lr_reduce], verbose=1)
 
-
-            X_train = batch_generator(X_train, y_train, batch_size= batch_size)
-            X_test =  batch_generator(X_test, y_test, batch_size= batch_size)
-
-
-            history = model.fit(X_train, batch_size = batch_size, epochs=ep, validation_data=X_test, callbacks=[early, lr_reduce], verbose=1)
+            model.trainable = True
+            model.summary()
+            rmsprop = tf.keras.optimizers.RMSprop(learning_rate_fine)
+            model.compile(loss="binary_crossentropy", optimizer=rmsprop, metrics=["accuracy"])
             
-        CX = CX[int(len(CX)*(prop)): len(CX)-1]
-        CY = CY[int(len(CY)*(prop)): len(CY)-1]
-        FX = FX[int(len(FX)*(prop)): len(FX)-1]
-        FY = FY[int(len(FY)*(prop)): len(FY)-1]
-        MX = MX[int(len(MX)*(prop)): len(MX)-1]
-        MY = MY[int(len(MY)*(prop)): len(MY)-1]
+            history = model.fit(chinese, 
+            #batch_size = batch_size, 
+            epochs=ep, validation_data=chinese_val, 
+            #steps_per_epoch = steps_per_epoch,
+            callbacks=[early, lr_reduce],verbose=1)
+            
+        ##############################################################
+        ############## PLOT SOME RESULTS ############################
+        plot = False
+        if plot:
+            train_acc = history.history['accuracy']
+            val_acc = history.history['val_accuracy']
+            train_loss = history.history['loss']
+            val_loss = history.history['val_loss']
+            No_Of_Epochs = range(ep)
+            train_acc_x = range(len(train_acc))
+            val_acc_x = range(len(train_acc))
+            train_loss_x = range(len(train_acc))
+            val_loss_x = range(len(train_acc))
 
-        
+            plt.plot(train_acc_x, train_acc, marker = 'o', color = 'blue', markersize = 10, 
+                            linewidth = 2, label = 'Training Accuracy')
+            plt.plot(val_acc_x, val_acc, marker = '.', color = 'red', markersize = 10, 
+                            linewidth = 2, label = 'Validation Accuracy')
+
+            plt.title('Training Accuracy and Testing Accuracy w.r.t Number of Epochs')
+
+            plt.legend()
+
+            plt.figure()
+
+            plt.plot(train_loss_x, train_loss, marker = 'o', color = 'blue', markersize = 10, 
+                            linewidth = 2, label = 'Training Loss')
+            plt.plot(val_loss_x, val_acc, marker = '.', color = 'red', markersize = 10, 
+                            linewidth = 2, label = 'Validation Loss')
+
+            plt.title('Training Loss and Testing Loss w.r.t Number of Epochs')
+
+            plt.legend()
+
+            plt.show()
+                
 
         #################################################
         ############# FEATURE EXTRACTION ################
+        #print(model.layers[-2])
+        model = Model(inputs=model.inputs, outputs=model.get_layer(name="feature_extractor").output)
+        #model.layers.pop()
+        #model.layers.pop()
+        model.summary()
+        
         print('FEATURE EXTRACTION')
         features = []
         for i in CX:
@@ -216,10 +327,14 @@ class FeatureExtractor:
             x = image.img_to_array(x)
             x = np.expand_dims(x, axis=0)
             feature = model.predict(x, verbose = 0)
-            features.append(feature[0][0][0])
+            features.append(feature[0])
             
         self.CX = np.array(features)
         self.CY = CY
+        print(np.shape(CX))
+        print(np.shape(CX[0]))
+        print(np.shape(CX[0][0]))
+        print(CX[0])
 
         features = []
         for i in CXT:
@@ -228,7 +343,7 @@ class FeatureExtractor:
             x = image.img_to_array(x)
             x = np.expand_dims(x, axis=0)
             feature = model.predict(x, verbose = 0)
-            features.append(feature[0][0][0])
+            features.append(feature[0])
         
         self.CXT = np.array(features)
         self.CYT = CYT
@@ -240,7 +355,7 @@ class FeatureExtractor:
             x = image.img_to_array(x)
             x = np.expand_dims(x, axis=0)
             feature = model.predict(x, verbose = 0)
-            features.append(feature[0][0][0])
+            features.append(feature[0])
         
         self.FX = np.array(features)
         self.FY = FY
@@ -252,7 +367,7 @@ class FeatureExtractor:
             x = image.img_to_array(x)
             x = np.expand_dims(x, axis=0)
             feature = model.predict(x, verbose = 0)
-            features.append(feature[0][0][0])
+            features.append(feature[0])
         
         self.FXT = np.array(features)
         self.FYT = FYT
@@ -264,7 +379,7 @@ class FeatureExtractor:
             x = image.img_to_array(x)
             x = np.expand_dims(x, axis=0)
             feature = model.predict(x, verbose = 0)
-            features.append(feature[0][0][0])
+            features.append(feature[0])
         
         self.MX = np.array(features)
         self.MY = MY
@@ -276,7 +391,7 @@ class FeatureExtractor:
             x = image.img_to_array(x)
             x = np.expand_dims(x, axis=0)
             feature = model.predict(x, verbose = 0)
-            features.append(feature[0][0][0])
+            features.append(feature[0])
         
         self.MXT = np.array(features)
         self.MYT = MYT

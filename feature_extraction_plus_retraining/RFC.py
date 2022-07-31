@@ -1,25 +1,21 @@
 #! /usr/bin/env python3
 
-import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.svm import SVC
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import GridSearchCV
 from torch import logspace
-from FeatureExtractor_VGG16 import FeatureExtractor
+from FeatureExtractor_VGG16_v2 import FeatureExtractor
+import manipulating_images_better
 from math import floor
 from sklearn.metrics import confusion_matrix
-import tensorflow as tf
-import torch
 
-class SVCClassificator:
+class RFCClassificator:
 
-    def __init__(self, ds_selection = "", kernel= ""):
+    def __init__(self, ds_selection = ""):
         self.ds_selection = ds_selection
-        self.kernel = kernel
 
     def execute(self):
-        
         gpus = tf.config.experimental.list_physical_devices('GPU')
         if gpus:
         # Restrict TensorFlow to only allocate 2GB of memory on the first GPU
@@ -45,7 +41,6 @@ class SVCClassificator:
                 ############################################################
                 ############### READ DATA ##################################
                 itd = FeatureExtractor(self.ds_selection)
-                
 
                 CX = itd.CX
                 CXT = itd.CXT
@@ -66,61 +61,55 @@ class SVCClassificator:
 
                 #####################################################################
                 ################### MODEL SELECTION (HYPERPARAMETER TUNING)##########
-
-                points = 50
                 print('MODEL SELECTION AND TUNING')
-                if self.kernel == 'rbf':
-                    logspaceC = np.logspace(-2,2.5,points)
-                    logspaceGamma = np.logspace(-2,2.5,points)
-                if self.kernel == 'linear':
-                    logspaceC = np.logspace(-2,2.5,points)
-                    logspaceGamma = np.logspace(-2,2.5,points)
-                grid = {'C':        logspaceC,
-                        'kernel':   [self.kernel],
-                        'gamma':    logspaceGamma}
-                MS = GridSearchCV(estimator = SVC(),
-                                param_grid = grid,
-                                scoring = 'balanced_accuracy',
-                                cv = 10,
-                                verbose = 0)
-                if self.ds_selection == "chinese":
-                    H = MS.fit(CX,CY)
-                if self.ds_selection == "french":
-                    H = MS.fit(FX,FY)
-                if self.ds_selection == "mix":
-                    H = MS.fit(MX,MY)
+
+                rfc=RandomForestClassifier(random_state=42)
+                logspace_n_estimators = []
+                for i in np.logspace(0,3,35):
+                    logspace_n_estimators.append(int(i))
+                param_grid = { 
+                    'n_estimators': logspace_n_estimators,
+                    'max_features': ['auto', 'sqrt', 'log2'],
+                    'max_depth' : [1,3,5,7,9,11, 13],
+                    'criterion' :['gini', 'entropy']
+                    }
                 
-                print('CLASSIFICATION')
-                print('C best param')
-                print(H.best_params_['C'])
-                print('gamma best param')
-                print(H.best_params_['gamma'])
+                CV_rfc = GridSearchCV(estimator=rfc, param_grid=param_grid, cv= 5)
+                
+                if self.ds_selection == "chinese":
+                    CV_rfc.fit(CX, CY)
+                if self.ds_selection == "french":
+                    CV_rfc.fit(FX, FY)
+                if self.ds_selection == "mix":
+                    CV_rfc.fit(MX, MY)
 
-                M = SVC(C = H.best_params_['C'],
-                        kernel = H.best_params_['kernel'],
-                        gamma = H.best_params_['gamma'])
+                print(CV_rfc.best_params_)
+
+                rfc1=RandomForestClassifier(random_state=42,
+                max_features=CV_rfc.best_params_['max_features'], n_estimators= CV_rfc.best_params_['n_estimators'],
+                max_depth=CV_rfc.best_params_['max_depth'], criterion=CV_rfc.best_params_['criterion'])
 
                 if self.ds_selection == "chinese":
-                    M = MS.fit(CX,CY)
+                    rfc1.fit(CX, CY)
                 if self.ds_selection == "french":
-                    M = MS.fit(FX,FY)
+                    rfc1.fit(FX, FY)
                 if self.ds_selection == "mix":
-                    M = MS.fit(MX,MY)
+                    rfc1.fit(MX, MY)
                 ####################################################
                 ################## TESTING #########################
 
                 print('PREDICTING CHINESE TEST SET')
-                CYF = M.predict(CXT)
+                CYF = rfc1.predict(CXT)
                 cm = confusion_matrix(CYT,CYF)
                 print(cm)
                 Ccm_list.append(cm)
                 print('Predicting FRENCH TEST SET')
-                CFYF = M.predict(FXT)
+                CFYF = rfc1.predict(FXT)
                 cm = confusion_matrix(FYT,CFYF)
                 print(cm)
                 Fcm_list.append(cm)
                 print('PREDICTING MIX TEST SET')
-                MYF = M.predict(MXT)
+                MYF = rfc1.predict(MXT)
                 cm = confusion_matrix(MYT,MYF)
                 print(cm)
                 Mcm_list.append(cm)
@@ -217,18 +206,9 @@ class SVCClassificator:
         statistic_F = return_statistics_pcm(Fcm_list)
         statistic_M = return_statistics_pcm(Mcm_list)
 
-        print('CHINESE')
-        for i in statistic_C:
-                print(i)
-        #print(statistic_C)
-        print('FRENCH')
-        for i in statistic_F:
-                print(i)
-        #print(statistic_F)
-        print('MIX')
-        for i in statistic_M:
-                print(i)
-        #print(statistic_M)
+        print(statistic_C)
+        print(statistic_F)
+        print(statistic_M)
 
 
         ####################################################################
