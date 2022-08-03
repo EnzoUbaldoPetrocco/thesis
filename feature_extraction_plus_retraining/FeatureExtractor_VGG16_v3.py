@@ -23,6 +23,33 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Dense
 from keras.layers import Input, Lambda, Dense, Flatten,Dropout
 from keras.models import Sequential
+import os
+import tempfile
+
+def add_regularization(model, regularizer=tf.keras.regularizers.l2(0.0001)):
+
+    if not isinstance(regularizer, tf.keras.regularizers.Regularizer):
+      print("Regularizer must be a subclass of tf.keras.regularizers.Regularizer")
+      return model
+
+    for layer in model.layers:
+        for attr in ['kernel_regularizer']:
+            if hasattr(layer, attr):
+              setattr(layer, attr, regularizer)
+
+    # When we change the layers attributes, the change only happens in the model config file
+    model_json = model.to_json()
+
+    # Save the weights before reloading the model.
+    tmp_weights_path = os.path.join(tempfile.gettempdir(), 'tmp_weights.h5')
+    model.save_weights(tmp_weights_path)
+
+    # load the model from the config
+    model = tf.keras.models.model_from_json(model_json)
+    
+    # Reload the model weights
+    model.load_weights(tmp_weights_path, by_name=True)
+    return model
 
 
 BATCH_SIZE = 1
@@ -95,12 +122,22 @@ class FeatureExtractor:
         ######################################################################################
         ############################# MODEL GENERATION #######################################
         #model = VGG16(weights='imagenet', include_top=False,  input_shape=(itd.size,itd.size,3))
-        model_pre = InceptionV3(weights='imagenet', include_top=False,  input_shape=(itd.size,itd.size,3))
+        base_model = tf.keras.applications.InceptionResNetV2(input_shape=(itd.size,itd.size,3), # define the input shape
+                                               include_top=False, # remove the classification layer
+                                               pooling='avg',
+                                               weights='imagenet') # use ImageNet pre-trained weights
+        base_model.trainable = True
+
+        # adding regularization
+        regularizer = tf.keras.regularizers.l2(0.0001)
+        base_model = add_regularization(base_model, regularizer=regularizer)
+        print(base_model.losses)
+
         # Create the model
         model = Sequential()
         # Add the vgg convolutional base model
-        model.add(model_pre)
-        #model.trainable = False
+        model.add(base_model)
+        model.trainable = False
         #model.summary()
         # Add new layers
         model.add(Flatten())

@@ -25,6 +25,7 @@ from keras.layers import Input, Lambda, Dense, Flatten,Dropout
 from keras.models import Sequential
 
 
+
 BATCH_SIZE = 1
 
 def to_grayscale_then_rgb(image):
@@ -95,26 +96,27 @@ class FeatureExtractor:
         ######################################################################################
         ############################# MODEL GENERATION #######################################
         #model = VGG16(weights='imagenet', include_top=False,  input_shape=(itd.size,itd.size,3))
-        model_pre = InceptionV3(weights='imagenet', include_top=False,  input_shape=(itd.size,itd.size,3))
+        base_model = tf.keras.applications.InceptionResNetV2(input_shape=(itd.size,itd.size,3), # define the input shape
+                                               include_top=False, # remove the classification layer
+                                               pooling='avg',
+                                               weights='imagenet') # use ImageNet pre-trained weights
+        base_model.trainable = True
+
+        for layer in base_model.layers[:len(base_model.layers)-3]:
+            layer.trainable = False
+        model.summary()
         # Create the model
         model = Sequential()
         # Add the vgg convolutional base model
-        model.add(model_pre)
-        #model.trainable = False
-        #model.summary()
-        # Add new layers
-        model.add(Flatten())
-        '''model.add(Dense(800, activation='relu'))
-        model.add(Dropout(0.51))'''
-        #model.add(Dropout(0.30))
-        model.add(Dense(15, activation='relu', name = 'feature_extractor'))
-        
+        model.add(base_model)
+        model.trainable = False
         model.add(Dense(1, activation='sigmoid'))
         # Show a summary of the model. Check the number of trainable parameters
         # Freeze four convolution blocks
         model.trainable = True
         for layer in model.layers[:len(model.layers)-3]:
             layer.trainable = False
+        model.summary()
 
         ####################################################################################
         ###################### TRAINING LAST LAYERS AND FINE TUNING ########################
@@ -280,9 +282,9 @@ class FeatureExtractor:
         #################################################
         ############# FEATURE EXTRACTION ################
         #print(model.layers[-2])
-        model = Model(inputs=model.inputs, outputs=model.get_layer(name="feature_extractor").output)
+        model = Model(inputs=model.inputs, outputs=model.layers[-2].output)
         
-        #model.summary()
+        model.summary()
         
         print('FEATURE EXTRACTION')
         features = []

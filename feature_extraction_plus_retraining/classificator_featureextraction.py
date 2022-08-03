@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from sklearn.svm import SVC
 from sklearn.model_selection import GridSearchCV
 from torch import logspace
-from FeatureExtractor_VGG16_v2 import FeatureExtractor
+from FeatureExtractor_VGG16_v3 import FeatureExtractor
 from math import floor
 from sklearn.metrics import confusion_matrix
 import tensorflow as tf
@@ -26,7 +26,7 @@ class SVCClassificator:
             try:
                 tf.config.experimental.set_virtual_device_configuration(
                     gpus[0],
-                    [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=2750)])
+                    [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=2200)])
                 logical_gpus = tf.config.experimental.list_logical_devices('GPU')
                 print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
             except RuntimeError as e:

@@ -167,13 +167,15 @@ class ImagesToData:
   def divide_ds_FE(self):
     self.prop = 1/1.8
     
-    base_path = '../../FE/' + self.dspath
-    self.delete_folder_content('../../FE')
     try:
+      process = '../../' + str(1)
+      self.created_dir(process)
+      process = process + '/FE/'
+      self.created_dir(process)
+      base_path = process + self.dspath
       self.created_dir(base_path)
       self.delete_folder_content(base_path)
-    except:
-      print('base path not existing')
+    except Exception as e: print(e)
     self.created_dir(base_path + '/chinese')
     self.created_dir(base_path + '/french')
     self.created_dir(base_path + '/chinese/' + 'cinesi')
