@@ -70,7 +70,7 @@ class FeatureExtractor:
         batch_fit = 8
 
         validation_split = 0.3
-
+        
         chindatagen = ImageDataGenerator(
             validation_split=validation_split,
             rescale=1/255,
@@ -100,20 +100,19 @@ class FeatureExtractor:
         # Add the vgg convolutional base model
         model.add(model_pre)
         model.trainable = False
-        model.summary()
+        #model.summary()
         # Add new layers
         model.add(Flatten())
-        model.add(Dense(550, activation='relu'))
-        model.add(Dropout(0.6))
-        model.add(Dense(200, activation='relu', name = 'feature_extractor'))
-        model.add(Dropout(0.6))
+        '''model.add(Dense(800, activation='relu'))
+        model.add(Dropout(0.51))'''
+        model.add(Dense(400, activation='relu', name = 'feature_extractor'))
+        model.add(Dropout(0.38))
         model.add(Dense(1, activation='sigmoid'))
         # Show a summary of the model. Check the number of trainable parameters
         # Freeze four convolution blocks
         model.trainable = True
-        for layer in model.layers[:len(model.layers)-5]:
+        for layer in model.layers[:len(model.layers)-4]:
             layer.trainable = False
-        model.summary()
 
         ####################################################################################
         ###################### TRAINING LAST LAYERS AND FINE TUNING ########################
@@ -121,18 +120,15 @@ class FeatureExtractor:
         
         ep = 30
         eps_fine = 30
+        verbose_param = 1
         
-        lr_reduce = ReduceLROnPlateau(monitor='accuracy', factor=0.2, patience=4, verbose=1, mode='max', min_lr=1e-8)
+        lr_reduce = ReduceLROnPlateau(monitor='val_accuracy', factor=0.2, patience=4, verbose=1, mode='max', min_lr=1e-8)
         #checkpoint = ModelCheckpoint('vgg16_finetune.h15', monitor= 'val_accuracy', mode= 'max', save_best_only = True, verbose= 0)
-        early = EarlyStopping(monitor='accuracy', min_delta=0.001, patience=16, verbose=1, mode='auto')
+        early = EarlyStopping(monitor='val_accuracy', min_delta=0.001, patience=13, verbose=1, mode='auto')
         
-        learning_rate= 1e-4
-        learning_rate_fine = 1e-5
-        '''lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
-            initial_learning_rate=1e-2,
-            decay_steps=10000,
-            decay_rate=0.9)
-        sgd = tf.keras.optimizers.SGD(learning_rate=lr_schedule)'''
+        learning_rate= 1e-5
+        learning_rate_fine = 5e-6
+        
         adam = optimizers.Adam(learning_rate)
         sgd = tf.keras.optimizers.SGD(learning_rate)
         rmsprop = tf.keras.optimizers.RMSprop(learning_rate)
@@ -173,18 +169,18 @@ class FeatureExtractor:
             #batch_size = batch_size, 
             epochs=ep, validation_data=chinese_val, 
             #steps_per_epoch = steps_per_epoch,
-            callbacks=[early, lr_reduce],verbose=1)
+            callbacks=[early, lr_reduce],verbose=verbose_param)
 
             model.trainable = True
-            model.summary()
+            #model.summary()
             rmsprop = tf.keras.optimizers.RMSprop(learning_rate_fine)
             model.compile(loss="binary_crossentropy", optimizer=rmsprop, metrics=["accuracy"])
             
-            history = model.fit(chinese, 
+            history_fine = model.fit(chinese, 
             #batch_size = batch_size, 
             epochs=eps_fine, validation_data=chinese_val, 
             #steps_per_epoch = steps_per_epoch,
-            callbacks=[early, lr_reduce],verbose=1)
+            callbacks=[early, lr_reduce],verbose=verbose_param)
             
             
         if self.ds_selection == "french":
@@ -193,14 +189,14 @@ class FeatureExtractor:
             target_size = (itd.size, itd.size),
             batch_size = batch_size,
             class_mode = 'binary',
-            color_mode = 'grayscale',
+            color_mode = 'rgb',
             subset = 'training')
 
             french_val = frenvaldatagen.flow_from_directory('../../FE/' + ds_selection + '/french',
             target_size = (itd.size, itd.size),
             batch_size = batch_size,
             class_mode = 'binary',
-            color_mode = "grayscale",
+            color_mode = "rgb",
             subset = 'validation')
 
             Number_Of_Training_Images = french.classes.shape[0]
@@ -209,18 +205,18 @@ class FeatureExtractor:
             history = model.fit(french,  
             #steps_per_epoch = steps_per_epoch,
             #batch_size = batch_size, 
-            epochs=ep, validation_data=french_val, callbacks=[early, lr_reduce], verbose=0)
+            epochs=ep, validation_data=french_val, callbacks=[early, lr_reduce], verbose=verbose_param)
 
             model.trainable = True
-            model.summary()
+            #model.summary()
             rmsprop = tf.keras.optimizers.RMSprop(learning_rate_fine)
             model.compile(loss="binary_crossentropy", optimizer=rmsprop, metrics=["accuracy"])
             
-            history = model.fit(chinese, 
+            history_fine = model.fit(french, 
             #batch_size = batch_size, 
-            epochs=eps_fine, validation_data=chinese_val, 
+            epochs=eps_fine, validation_data=french_val, 
             #steps_per_epoch = steps_per_epoch,
-            callbacks=[early, lr_reduce],verbose=1)
+            callbacks=[early, lr_reduce],verbose=verbose_param)
             
         if self.ds_selection == "mix":
             print('mix')
@@ -261,18 +257,18 @@ class FeatureExtractor:
             history = model.fit(dataset,  
             #steps_per_epoch = steps_per_epoch,
             #batch_size = batch_size, 
-            epochs=eps_fine, validation_data=dataset_val, callbacks=[early, lr_reduce], verbose=1)
+            epochs=eps_fine, validation_data=dataset_val, callbacks=[early, lr_reduce], verbose=verbose_param)
 
             model.trainable = True
-            model.summary()
+            #model.summary()
             rmsprop = tf.keras.optimizers.RMSprop(learning_rate_fine)
             model.compile(loss="binary_crossentropy", optimizer=rmsprop, metrics=["accuracy"])
             
-            history = model.fit(chinese, 
+            history_fine = model.fit(dataset, 
             #batch_size = batch_size, 
-            epochs=ep, validation_data=chinese_val, 
+            epochs=ep, validation_data=dataset_val, 
             #steps_per_epoch = steps_per_epoch,
-            callbacks=[early, lr_reduce],verbose=1)
+            callbacks=[early, lr_reduce],verbose=verbose_param)
             
         ##############################################################
         ############## PLOT SOME RESULTS ############################
@@ -289,9 +285,9 @@ class FeatureExtractor:
             val_loss_x = range(len(train_acc))
 
             plt.plot(train_acc_x, train_acc, marker = 'o', color = 'blue', markersize = 10, 
-                            linewidth = 2, label = 'Training Accuracy')
+                            linewidth = 1.5, label = 'Training Accuracy')
             plt.plot(val_acc_x, val_acc, marker = '.', color = 'red', markersize = 10, 
-                            linewidth = 2, label = 'Validation Accuracy')
+                            linewidth = 1.5, label = 'Validation Accuracy')
 
             plt.title('Training Accuracy and Testing Accuracy w.r.t Number of Epochs')
 
@@ -300,9 +296,42 @@ class FeatureExtractor:
             plt.figure()
 
             plt.plot(train_loss_x, train_loss, marker = 'o', color = 'blue', markersize = 10, 
-                            linewidth = 2, label = 'Training Loss')
+                            linewidth = 1.5, label = 'Training Loss')
             plt.plot(val_loss_x, val_acc, marker = '.', color = 'red', markersize = 10, 
-                            linewidth = 2, label = 'Validation Loss')
+                            linewidth = 1.5, label = 'Validation Loss')
+
+            plt.title('Training Loss and Testing Loss w.r.t Number of Epochs')
+
+            plt.legend()
+
+            plt.show()
+
+
+            train_acc = history_fine.history['accuracy']
+            val_acc = history_fine.history['val_accuracy']
+            train_loss = history_fine.history['loss']
+            val_loss = history_fine.history['val_loss']
+            No_Of_Epochs = range(ep)
+            train_acc_x = range(len(train_acc))
+            val_acc_x = range(len(train_acc))
+            train_loss_x = range(len(train_acc))
+            val_loss_x = range(len(train_acc))
+
+            plt.plot(train_acc_x, train_acc, marker = 'o', color = 'blue', markersize = 10, 
+                            linewidth = 1.5, label = 'Training Accuracy')
+            plt.plot(val_acc_x, val_acc, marker = '.', color = 'red', markersize = 10, 
+                            linewidth = 1.5, label = 'Validation Accuracy')
+
+            plt.title('Training Accuracy and Testing Accuracy w.r.t Number of Epochs')
+
+            plt.legend()
+
+            plt.figure()
+
+            plt.plot(train_loss_x, train_loss, marker = 'o', color = 'blue', markersize = 10, 
+                            linewidth = 1.5, label = 'Training Loss')
+            plt.plot(val_loss_x, val_acc, marker = '.', color = 'red', markersize = 10, 
+                            linewidth = 1.5, label = 'Validation Loss')
 
             plt.title('Training Loss and Testing Loss w.r.t Number of Epochs')
 
@@ -315,9 +344,8 @@ class FeatureExtractor:
         ############# FEATURE EXTRACTION ################
         #print(model.layers[-2])
         model = Model(inputs=model.inputs, outputs=model.get_layer(name="feature_extractor").output)
-        #model.layers.pop()
-        #model.layers.pop()
-        model.summary()
+        
+        #model.summary()
         
         print('FEATURE EXTRACTION')
         features = []
@@ -331,10 +359,6 @@ class FeatureExtractor:
             
         self.CX = np.array(features)
         self.CY = CY
-        print(np.shape(CX))
-        print(np.shape(CX[0]))
-        print(np.shape(CX[0][0]))
-        print(CX[0])
 
         features = []
         for i in CXT:

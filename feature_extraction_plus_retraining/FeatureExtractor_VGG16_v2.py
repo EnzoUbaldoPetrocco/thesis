@@ -7,6 +7,8 @@ from tensorflow.keras.applications.resnet50 import ResNet50
 from tensorflow.keras.applications.vgg16 import VGG16
 from tensorflow.keras.applications.vgg19 import VGG19
 from tensorflow.keras.applications.xception import Xception
+from tensorflow.keras.applications.inception_v3 import InceptionV3
+from tensorflow.keras.applications.inception_resnet_v2 import InceptionResNetV2
 from tensorflow.keras.preprocessing import image
 from tensorflow.keras.applications.vgg16 import preprocess_input
 import cv2
@@ -64,11 +66,11 @@ class FeatureExtractor:
         MY = itd.MY
         MYT = itd.MYT
 
-        batch_size = 8
+        batch_size = 12
         batch_fit = 8
 
-        validation_split = 0.3
-
+        validation_split = 0.1
+        
         chindatagen = ImageDataGenerator(
             validation_split=validation_split,
             rescale=1/255,
@@ -92,43 +94,40 @@ class FeatureExtractor:
         ######################################################################################
         ############################# MODEL GENERATION #######################################
         #model = VGG16(weights='imagenet', include_top=False,  input_shape=(itd.size,itd.size,3))
-        model_pre = VGG19(weights='imagenet', include_top=False,  input_shape=(itd.size,itd.size,3))
+        model_pre = InceptionV3(weights='imagenet', include_top=False,  input_shape=(itd.size,itd.size,3))
         # Create the model
         model = Sequential()
         # Add the vgg convolutional base model
         model.add(model_pre)
         model.trainable = False
-        model.summary()
+        #model.summary()
         # Add new layers
         model.add(Flatten())
-        model.add(Dense(300, activation='relu'))
-        model.add(Dropout(0.5))
-        model.add(Dense(150, activation='relu', name = 'feature_extractor'))
-        model.add(Dropout(0.5))
+        '''model.add(Dense(800, activation='relu'))
+        model.add(Dropout(0.51))'''
+        #model.add(Dropout(0.30))
+        model.add(Dense(15, activation='relu', name = 'feature_extractor'))
+        
         model.add(Dense(1, activation='sigmoid'))
         # Show a summary of the model. Check the number of trainable parameters
         # Freeze four convolution blocks
         model.trainable = True
-        for layer in model.layers[:len(model.layers)-5]:
+        for layer in model.layers[:len(model.layers)-3]:
             layer.trainable = False
-        model.summary()
 
         ####################################################################################
-        ###################### RETRAINING ###############################################
+        ###################### TRAINING LAST LAYERS AND FINE TUNING ########################
         print('RETRAINING')
         
-        ep = 30
+        ep = 40
+        verbose_param = 1
         
-        lr_reduce = ReduceLROnPlateau(monitor='accuracy', factor=0.2, patience=4, verbose=1, mode='max', min_lr=1e-7)
+        lr_reduce = ReduceLROnPlateau(monitor='val_accuracy', factor=0.2, patience=4, verbose=1, mode='max', min_lr=1e-8)
         #checkpoint = ModelCheckpoint('vgg16_finetune.h15', monitor= 'val_accuracy', mode= 'max', save_best_only = True, verbose= 0)
-        early = EarlyStopping(monitor='accuracy', min_delta=0.001, patience=16, verbose=1, mode='auto')
+        early = EarlyStopping(monitor='val_accuracy', min_delta=0.001, patience=17, verbose=1, mode='auto')
         
-        learning_rate= 1e-4
-        '''lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
-            initial_learning_rate=1e-2,
-            decay_steps=10000,
-            decay_rate=0.9)
-        sgd = tf.keras.optimizers.SGD(learning_rate=lr_schedule)'''
+        learning_rate= 2e-5
+        
         adam = optimizers.Adam(learning_rate)
         sgd = tf.keras.optimizers.SGD(learning_rate)
         rmsprop = tf.keras.optimizers.RMSprop(learning_rate)
@@ -169,7 +168,8 @@ class FeatureExtractor:
             #batch_size = batch_size, 
             epochs=ep, validation_data=chinese_val, 
             #steps_per_epoch = steps_per_epoch,
-            callbacks=[early, lr_reduce],verbose=1)
+            callbacks=[early, lr_reduce],verbose=verbose_param)
+
             
         if self.ds_selection == "french":
             print('french')
@@ -177,14 +177,14 @@ class FeatureExtractor:
             target_size = (itd.size, itd.size),
             batch_size = batch_size,
             class_mode = 'binary',
-            color_mode = 'grayscale',
+            color_mode = 'rgb',
             subset = 'training')
 
             french_val = frenvaldatagen.flow_from_directory('../../FE/' + ds_selection + '/french',
             target_size = (itd.size, itd.size),
             batch_size = batch_size,
             class_mode = 'binary',
-            color_mode = "grayscale",
+            color_mode = "rgb",
             subset = 'validation')
 
             Number_Of_Training_Images = french.classes.shape[0]
@@ -193,7 +193,8 @@ class FeatureExtractor:
             history = model.fit(french,  
             #steps_per_epoch = steps_per_epoch,
             #batch_size = batch_size, 
-            epochs=ep, validation_data=french_val, callbacks=[early, lr_reduce], verbose=0)
+            epochs=ep, validation_data=french_val, callbacks=[early, lr_reduce], verbose=verbose_param)
+
             
         if self.ds_selection == "mix":
             print('mix')
@@ -234,7 +235,8 @@ class FeatureExtractor:
             history = model.fit(dataset,  
             #steps_per_epoch = steps_per_epoch,
             #batch_size = batch_size, 
-            epochs=ep, validation_data=dataset_val, callbacks=[early, lr_reduce], verbose=1)
+            epochs=ep, validation_data=dataset_val, callbacks=[early, lr_reduce], verbose=verbose_param)
+
             
         ##############################################################
         ############## PLOT SOME RESULTS ############################
@@ -251,9 +253,9 @@ class FeatureExtractor:
             val_loss_x = range(len(train_acc))
 
             plt.plot(train_acc_x, train_acc, marker = 'o', color = 'blue', markersize = 10, 
-                            linewidth = 2, label = 'Training Accuracy')
+                            linewidth = 1.5, label = 'Training Accuracy')
             plt.plot(val_acc_x, val_acc, marker = '.', color = 'red', markersize = 10, 
-                            linewidth = 2, label = 'Validation Accuracy')
+                            linewidth = 1.5, label = 'Validation Accuracy')
 
             plt.title('Training Accuracy and Testing Accuracy w.r.t Number of Epochs')
 
@@ -262,24 +264,24 @@ class FeatureExtractor:
             plt.figure()
 
             plt.plot(train_loss_x, train_loss, marker = 'o', color = 'blue', markersize = 10, 
-                            linewidth = 2, label = 'Training Loss')
+                            linewidth = 1.5, label = 'Training Loss')
             plt.plot(val_loss_x, val_acc, marker = '.', color = 'red', markersize = 10, 
-                            linewidth = 2, label = 'Validation Loss')
+                            linewidth = 1.5, label = 'Validation Loss')
 
             plt.title('Training Loss and Testing Loss w.r.t Number of Epochs')
 
             plt.legend()
 
             plt.show()
+
                 
 
         #################################################
         ############# FEATURE EXTRACTION ################
         #print(model.layers[-2])
         model = Model(inputs=model.inputs, outputs=model.get_layer(name="feature_extractor").output)
-        #model.layers.pop()
-        #model.layers.pop()
-        model.summary()
+        
+        #model.summary()
         
         print('FEATURE EXTRACTION')
         features = []
@@ -290,13 +292,10 @@ class FeatureExtractor:
             x = np.expand_dims(x, axis=0)
             feature = model.predict(x, verbose = 0)
             features.append(feature[0])
+
             
         self.CX = np.array(features)
         self.CY = CY
-        print(np.shape(CX))
-        print(np.shape(CX[0]))
-        print(np.shape(CX[0][0]))
-        print(CX[0])
 
         features = []
         for i in CXT:
