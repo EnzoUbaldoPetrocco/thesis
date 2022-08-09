@@ -17,7 +17,7 @@ from torch import randint
 import os, shutil
 
 
-size = 200
+size = 33
 total_n_images = 469
 
 class ImagesToData:
@@ -166,32 +166,45 @@ class ImagesToData:
 
   def divide_ds_FE(self):
     self.prop = 1/1.8
-    
-    try:
-      process = '../../' + str(1)
-      self.created_dir(process)
-      process = process + '/FE/'
-      self.created_dir(process)
-      base_path = process + self.dspath
-      self.created_dir(base_path)
-      self.delete_folder_content(base_path)
-    except Exception as e: print(e)
-    self.created_dir(base_path + '/chinese')
-    self.created_dir(base_path + '/french')
-    self.created_dir(base_path + '/chinese/' + 'cinesi')
-    self.created_dir(base_path + '/chinese/' + 'cinesi accese')
-    self.created_dir(base_path + '/french/'+ 'francesi')
-    self.created_dir(base_path + '/french/'+ 'francesi accese')
+    base_path = '../../FE/' + self.dspath
+    self.delete_folder_content('../../FE/')
+    if self.dspath != 'mix':
+      #self.delete_folder_content(base_path)
+      try:
+        self.created_dir(base_path)
+        self.delete_folder_content(base_path)
+      except:
+        print('base path not existing')
+      self.created_dir(base_path + '/chinese')
+      self.created_dir(base_path + '/french')
+      self.created_dir(base_path + '/chinese/' + 'cinesi')
+      self.created_dir(base_path + '/chinese/' + 'cinesi accese')
+      self.created_dir(base_path + '/french/'+ 'francesi')
+      self.created_dir(base_path + '/french/'+ 'francesi accese')
 
-    self.save_images(self.chinese_on[0:int(len(self.chinese_on)*self.prop)], base_path  + '/chinese/'+ 'cinesi')
-    self.save_images(self.chinese_off[0:int(len(self.chinese_off)*self.prop)], base_path  + '/chinese/'+ 'cinesi accese')
-    self.save_images(self.french_on[0:int(len(self.french_on)*self.prop)], base_path + '/french/' + 'francesi')
-    self.save_images(self.french_off[0:int(len(self.french_off)*self.prop)], base_path  + '/french/'+ 'francesi accese')
+      self.save_images(self.chinese_on[0:int(len(self.chinese_on)*self.prop)], base_path  + '/chinese/'+ 'cinesi')
+      self.save_images(self.chinese_off[0:int(len(self.chinese_off)*self.prop)], base_path  + '/chinese/'+ 'cinesi accese')
+      self.save_images(self.french_on[0:int(len(self.french_on)*self.prop)], base_path + '/french/' + 'francesi')
+      self.save_images(self.french_off[0:int(len(self.french_off)*self.prop)], base_path  + '/french/'+ 'francesi accese')
+    else:
+      try:
+        self.created_dir(base_path)
+        self.delete_folder_content(base_path)
+      except:
+        print('base path not existing')
+      self.created_dir(base_path + '/accese')
+      self.created_dir(base_path + '/spente')
+
+      off = numpy.concatenate((self.chinese_off[0:int(len(self.chinese_off)*self.prop)], self.french_off[0:int(len(self.french_off)*self.prop)]), axis=0)
+      on = numpy.concatenate((self.chinese_on[0:int(len(self.chinese_on)*self.prop)], self.french_on[0:int(len(self.french_on)*self.prop)]), axis=0)
+
+      self.save_images(off, base_path  + '/spente')
+      self.save_images(on, base_path  + '/accese')
     self.chinese_on = self.chinese_on[int(len(self.chinese_on)*self.prop):len(self.chinese_on)-1]
     self.chinese_off = self.chinese_off[int(len(self.chinese_off)*self.prop):len(self.chinese_off)-1]
     self.french_on = self.french_on[int(len(self.french_on)*self.prop):len(self.french_on)-1]
     self.french_off = self.french_off[int(len(self.french_off)*self.prop):len(self.french_off)-1]
-    
+
 
 
   def mix(self):
@@ -225,7 +238,7 @@ class ImagesToData:
   def prepare_ds(self):
     ### Divisions
     first = int(270*(1-self.prop))
-    second = int((270 + 105)*(1-self.prop))
+    second = int((270 + 110)*(1-self.prop))
     fin = int(total_n_images*(1-self.prop))
     
 

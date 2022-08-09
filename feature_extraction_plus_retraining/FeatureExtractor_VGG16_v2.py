@@ -21,7 +21,7 @@ from skimage.color import gray2rgb
 from matplotlib import pyplot as plt
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Dense
-from keras.layers import Input, Lambda, Dense, Flatten,Dropout
+from keras.layers import Input, Lambda, Dense, Flatten,Dropout, MaxPooling3D
 from keras.models import Sequential
 
 
@@ -67,7 +67,7 @@ class FeatureExtractor:
         MY = itd.MY
         MYT = itd.MYT
 
-        batch_size = 12
+        batch_size = 16
         batch_fit = 8
 
         validation_split = 0.1
@@ -95,7 +95,7 @@ class FeatureExtractor:
         ######################################################################################
         ############################# MODEL GENERATION #######################################
         #model = VGG16(weights='imagenet', include_top=False,  input_shape=(itd.size,itd.size,3))
-        model_pre = InceptionV3(weights='imagenet', include_top=False,  input_shape=(itd.size,itd.size,3))
+        model_pre = VGG19(weights='imagenet', include_top=False,  input_shape=(itd.size,itd.size,3))
         # Create the model
         model = Sequential()
         # Add the vgg convolutional base model
@@ -104,17 +104,18 @@ class FeatureExtractor:
         #model.summary()
         # Add new layers
         model.add(Flatten())
-        '''model.add(Dense(800, activation='relu'))
-        model.add(Dropout(0.51))'''
+        model.add(Dense(500, activation='relu'))
+        model.add(Dropout(0.1))
         #model.add(Dropout(0.30))
-        model.add(Dense(15, activation='relu', name = 'feature_extractor'))
+        model.add(Dense(20, activation='relu', name = 'feature_extractor'))
         
         model.add(Dense(1, activation='sigmoid'))
         # Show a summary of the model. Check the number of trainable parameters
         # Freeze four convolution blocks
         model.trainable = True
-        for layer in model.layers[:len(model.layers)-3]:
-            layer.trainable = False
+        '''for layer in model.layers[:len(model.layers)-5]:
+            layer.trainable = False'''
+        model.summary()
 
         ####################################################################################
         ###################### TRAINING LAST LAYERS AND FINE TUNING ########################
@@ -123,9 +124,9 @@ class FeatureExtractor:
         ep = 40
         verbose_param = 1
         
-        lr_reduce = ReduceLROnPlateau(monitor='val_accuracy', factor=0.2, patience=4, verbose=1, mode='max', min_lr=1e-8)
+        lr_reduce = ReduceLROnPlateau(monitor='val_accuracy', factor=0.2, patience=3, verbose=1, mode='max', min_lr=1e-8)
         #checkpoint = ModelCheckpoint('vgg16_finetune.h15', monitor= 'val_accuracy', mode= 'max', save_best_only = True, verbose= 0)
-        early = EarlyStopping(monitor='val_accuracy', min_delta=0.001, patience=17, verbose=1, mode='auto')
+        early = EarlyStopping(monitor='val_accuracy', min_delta=0.001, patience=18, verbose=1, mode='auto')
         
         learning_rate= 2e-5
         
@@ -199,42 +200,26 @@ class FeatureExtractor:
             
         if self.ds_selection == "mix":
             print('mix')
-            chinese = chindatagen.flow_from_directory('../../FE/' + ds_selection + '/chinese',
+            dataset = chindatagen.flow_from_directory('../../FE/' + ds_selection,
             target_size = (itd.size, itd.size),
             batch_size = batch_size,
             class_mode = 'binary',
-            color_mode = "grayscale",
+            color_mode = "rgb",
             subset = 'training')
 
-            chinese_val = chinvaldatagen.flow_from_directory('../../FE/' + ds_selection + '/chinese',
+            dataset_val = chinvaldatagen.flow_from_directory('../../FE/' + ds_selection,
             target_size = (itd.size, itd.size),
             batch_size = batch_size,
             class_mode = 'binary',
-            color_mode = "grayscale",
+            color_mode = "rgb",
             subset = 'validation')
 
-            french = frendatagen.flow_from_directory('../../FE/' + ds_selection + '/french',
-            target_size = (itd.size, itd.size),
-            batch_size = batch_size,
-            class_mode = 'binary',
-            color_mode = "grayscale",
-            subset = 'training')
-
-            french_val = frenvaldatagen.flow_from_directory('../../FE/' + ds_selection + '/french',
-            target_size = (itd.size, itd.size),
-            batch_size = batch_size,
-            class_mode = 'binary',
-            color_mode = "grayscale",
-            subset = 'validation')
-
-            dataset = tf.data.Dataset.zip((chinese, french))
-            dataset_val = tf.data.Dataset.zip((chinese_val, french_val))
-
+            
             Number_Of_Training_Images = dataset.classes.shape[0]
             steps_per_epoch = Number_Of_Training_Images/batch_size
 
             history = model.fit(dataset,  
-            #steps_per_epoch = steps_per_epoch,
+            steps_per_epoch = steps_per_epoch,
             #batch_size = batch_size, 
             epochs=ep, validation_data=dataset_val, callbacks=[early, lr_reduce], verbose=verbose_param)
 

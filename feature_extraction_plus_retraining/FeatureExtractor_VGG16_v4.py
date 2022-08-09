@@ -68,7 +68,7 @@ class FeatureExtractor:
         MY = itd.MY
         MYT = itd.MYT
 
-        batch_size = 12
+        batch_size = 16
         batch_fit = 8
 
         validation_split = 0.1
@@ -96,38 +96,40 @@ class FeatureExtractor:
         ######################################################################################
         ############################# MODEL GENERATION #######################################
         #model = VGG16(weights='imagenet', include_top=False,  input_shape=(itd.size,itd.size,3))
-        base_model = tf.keras.applications.InceptionResNetV2(input_shape=(itd.size,itd.size,3), # define the input shape
+        base_model = tf.keras.applications.VGG19(input_shape=(itd.size,itd.size,3), # define the input shape
                                                include_top=False, # remove the classification layer
                                                pooling='avg',
                                                weights='imagenet') # use ImageNet pre-trained weights
         base_model.trainable = True
 
-        for layer in base_model.layers[:len(base_model.layers)-3]:
+        for layer in base_model.layers[:len(base_model.layers)-4]:
             layer.trainable = False
-        model.summary()
+        #base_model.summary()
         # Create the model
         model = Sequential()
         # Add the vgg convolutional base model
         model.add(base_model)
-        model.trainable = False
+        model.add(Dropout(0.5))
+        model.add(Dense(8, activation='relu', name='feature_extractor'))
+        #model.trainable = False
         model.add(Dense(1, activation='sigmoid'))
         # Show a summary of the model. Check the number of trainable parameters
         # Freeze four convolution blocks
         model.trainable = True
-        for layer in model.layers[:len(model.layers)-3]:
-            layer.trainable = False
-        model.summary()
+        '''for layer in model.layers[:len(model.layers)-3]:
+            layer.trainable = False'''
+        #model.summary()
 
         ####################################################################################
         ###################### TRAINING LAST LAYERS AND FINE TUNING ########################
         print('RETRAINING')
         
-        ep = 40
+        ep = 35
         verbose_param = 1
         
-        lr_reduce = ReduceLROnPlateau(monitor='val_accuracy', factor=0.2, patience=4, verbose=1, mode='max', min_lr=1e-8)
+        lr_reduce = ReduceLROnPlateau(monitor='val_accuracy', factor=0.2, patience=3, verbose=1, mode='max', min_lr=1e-8)
         #checkpoint = ModelCheckpoint('vgg16_finetune.h15', monitor= 'val_accuracy', mode= 'max', save_best_only = True, verbose= 0)
-        early = EarlyStopping(monitor='val_accuracy', min_delta=0.001, patience=17, verbose=1, mode='auto')
+        early = EarlyStopping(monitor='val_accuracy', min_delta=0.001, patience=10, verbose=1, mode='auto')
         
         learning_rate= 2e-5
         
@@ -192,6 +194,7 @@ class FeatureExtractor:
 
             Number_Of_Training_Images = french.classes.shape[0]
             steps_per_epoch = Number_Of_Training_Images/batch_size
+            
 
             history = model.fit(french,  
             #steps_per_epoch = steps_per_epoch,
@@ -229,10 +232,42 @@ class FeatureExtractor:
             color_mode = "grayscale",
             subset = 'validation')
 
-            dataset = tf.data.Dataset.zip((chinese, french))
-            dataset_val = tf.data.Dataset.zip((chinese_val, french_val))
+            print(chinese.image_shape)
+            print(chinese.num_classes)
 
-            Number_Of_Training_Images = dataset.classes.shape[0]
+            Number_Of_Training_Images = chinese.classes.shape[0] * 2
+
+            chinese = tf.data.Dataset.from_generator(
+                lambda: chinese,
+                output_types = (tf.float32, tf.float32),
+                output_shapes = ([None, itd.size, itd.size, 3], [None, 1]),
+                )
+            
+            chinese_val = tf.data.Dataset.from_generator(
+                lambda: chinese_val,
+                output_types = (tf.float32, tf.float32),
+                output_shapes = ([None, itd.size, itd.size, 3], [None, 1]),
+            )
+            
+            french = tf.data.Dataset.from_generator(
+                lambda: french,
+                output_types = (tf.float32, tf.float32),
+                output_shapes = ([None, itd.size, itd.size, 3], [None, 1]),
+            )
+
+            french_val = tf.data.Dataset.from_generator(
+                lambda: french_val,
+                output_types = (tf.float32, tf.float32),
+                output_shapes = ([None, itd.size, itd.size, 3], [None, 1]),
+            )
+            
+
+            #dataset = tf.data.Dataset.zip((chinese, french))
+            #dataset_val = tf.data.Dataset.zip((chinese_val, french_val))
+
+            dataset = chinese.concatenate(french)
+            dataset_val = chinese_val.concatenate(french_val)
+
             steps_per_epoch = Number_Of_Training_Images/batch_size
 
             history = model.fit(dataset,  
@@ -282,9 +317,9 @@ class FeatureExtractor:
         #################################################
         ############# FEATURE EXTRACTION ################
         #print(model.layers[-2])
-        model = Model(inputs=model.inputs, outputs=model.layers[-2].output)
+        model = Model(inputs=model.inputs, outputs=model.get_layer(name='feature_extractor').output)
         
-        model.summary()
+        #model.summary()
         
         print('FEATURE EXTRACTION')
         features = []
@@ -296,8 +331,6 @@ class FeatureExtractor:
             feature = model.predict(x, verbose = 0)
             features.append(feature[0])
 
-        for i in features[0]:
-            print(i)
 
             
         self.CX = np.array(features)
