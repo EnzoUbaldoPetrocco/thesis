@@ -67,7 +67,7 @@ class FeatureExtractor:
         MY = itd.MY
         MYT = itd.MYT
 
-        batch_size = 16
+        batch_size = 2
 
         validation_split = 0.1
         
@@ -114,7 +114,7 @@ class FeatureExtractor:
         #checkpoint = ModelCheckpoint('vgg16_finetune.h15', monitor= 'val_accuracy', mode= 'max', save_best_only = True, verbose= 0)
         early = EarlyStopping(monitor='val_accuracy', min_delta=0.001, patience=18, verbose=1, mode='auto')
         
-        learning_rate= 1e-3
+        learning_rate= 1e-5
         
         adam = optimizers.Adam(learning_rate)
         sgd = tf.keras.optimizers.SGD(learning_rate)
@@ -263,7 +263,7 @@ class FeatureExtractor:
             x = image.img_to_array(x)
             x = np.expand_dims(x, axis=0)
             feature = model.predict(x, verbose = 0)
-            features.append(feature[0])
+            features.append(feature[0].flatten())
 
         for i in features[0]:
             print(i)
@@ -279,7 +279,7 @@ class FeatureExtractor:
             x = image.img_to_array(x)
             x = np.expand_dims(x, axis=0)
             feature = model.predict(x, verbose = 0)
-            features.append(feature[0])
+            features.append(feature[0].flatten())
         
         self.CXT = np.array(features)
         self.CYT = CYT
@@ -291,7 +291,7 @@ class FeatureExtractor:
             x = image.img_to_array(x)
             x = np.expand_dims(x, axis=0)
             feature = model.predict(x, verbose = 0)
-            features.append(feature[0])
+            features.append(feature[0].flatten())
         
         self.FX = np.array(features)
         self.FY = FY
@@ -303,7 +303,7 @@ class FeatureExtractor:
             x = image.img_to_array(x)
             x = np.expand_dims(x, axis=0)
             feature = model.predict(x, verbose = 0)
-            features.append(feature[0])
+            features.append(feature[0].flatten())
         
         self.FXT = np.array(features)
         self.FYT = FYT
@@ -315,7 +315,7 @@ class FeatureExtractor:
             x = image.img_to_array(x)
             x = np.expand_dims(x, axis=0)
             feature = model.predict(x, verbose = 0)
-            features.append(feature[0])
+            features.append(feature[0].flatten())
         
         self.MX = np.array(features)
         self.MY = MY
@@ -327,7 +327,7 @@ class FeatureExtractor:
             x = image.img_to_array(x)
             x = np.expand_dims(x, axis=0)
             feature = model.predict(x, verbose = 0)
-            features.append(feature[0])
+            features.append(feature[0].flatten())
         
         self.MXT = np.array(features)
         self.MYT = MYT
