@@ -68,7 +68,6 @@ class FeatureExtractor:
         MYT = itd.MYT
 
         batch_size = 16
-        batch_fit = 8
 
         validation_split = 0.1
         
@@ -95,26 +94,13 @@ class FeatureExtractor:
         ######################################################################################
         ############################# MODEL GENERATION #######################################
         #model = VGG16(weights='imagenet', include_top=False,  input_shape=(itd.size,itd.size,3))
-        model_pre = VGG19(weights='imagenet', include_top=False,  input_shape=(itd.size,itd.size,3))
-        # Create the model
-        model = Sequential()
-        # Add the vgg convolutional base model
-        model.add(model_pre)
-        #model.trainable = False
-        #model.summary()
-        # Add new layers
-        model.add(Flatten())
-        model.add(Dense(500, activation='relu'))
-        model.add(Dropout(0.1))
-        #model.add(Dropout(0.30))
-        model.add(Dense(20, activation='relu', name = 'feature_extractor'))
-        
-        model.add(Dense(1, activation='sigmoid'))
-        # Show a summary of the model. Check the number of trainable parameters
-        # Freeze four convolution blocks
-        model.trainable = True
-        '''for layer in model.layers[:len(model.layers)-5]:
-            layer.trainable = False'''
+        base_model = Xception(weights='imagenet', include_top=False,  input_shape=(itd.size,itd.size,3))
+        base_model.trainable = True
+
+        inputs = tf.keras.Input(shape=(itd.size, itd.size, 3))
+        x = base_model(inputs, training=True)
+        outputs = tf.keras.layers.Dense(1)(x)
+        model = tf.keras.Model(inputs, outputs)
         model.summary()
 
         ####################################################################################
@@ -128,7 +114,7 @@ class FeatureExtractor:
         #checkpoint = ModelCheckpoint('vgg16_finetune.h15', monitor= 'val_accuracy', mode= 'max', save_best_only = True, verbose= 0)
         early = EarlyStopping(monitor='val_accuracy', min_delta=0.001, patience=18, verbose=1, mode='auto')
         
-        learning_rate= 2e-5
+        learning_rate= 1e-3
         
         adam = optimizers.Adam(learning_rate)
         sgd = tf.keras.optimizers.SGD(learning_rate)
@@ -265,9 +251,9 @@ class FeatureExtractor:
         #################################################
         ############# FEATURE EXTRACTION ################
         #print(model.layers[-2])
-        model = Model(inputs=model.inputs, outputs=model.get_layer(name="feature_extractor").output)
-        
-        #model.summary()
+        #model = Model(inputs=model.inputs, outputs=model.layers[:-2])
+        model.layers.pop()        
+        model.summary()
         
         print('FEATURE EXTRACTION')
         features = []

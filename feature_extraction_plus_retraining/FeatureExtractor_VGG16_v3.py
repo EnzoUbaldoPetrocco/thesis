@@ -1,8 +1,7 @@
 #! /usr/bin/env python3
 from audioop import rms
-from re import I
 from unicodedata import name
-import manipulating_images_better
+import manipulating_images
 import numpy as np
 from tensorflow.keras.applications.resnet50 import ResNet50
 from tensorflow.keras.applications.vgg16 import VGG16
@@ -13,6 +12,7 @@ from tensorflow.keras.applications.inception_resnet_v2 import InceptionResNetV2
 from tensorflow.keras.preprocessing import image
 from tensorflow.keras.applications.vgg16 import preprocess_input
 import cv2
+from tensorflow import keras
 from keras.preprocessing.image import ImageDataGenerator
 from keras import layers, models, Model, optimizers
 from keras.callbacks import ReduceLROnPlateau, ModelCheckpoint, EarlyStopping
@@ -23,36 +23,14 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Dense
 from keras.layers import Input, Lambda, Dense, Flatten,Dropout
 from keras.models import Sequential
-import os
-import tempfile
-
-def add_regularization(model, regularizer=tf.keras.regularizers.l2(0.0001)):
-
-    if not isinstance(regularizer, tf.keras.regularizers.Regularizer):
-      print("Regularizer must be a subclass of tf.keras.regularizers.Regularizer")
-      return model
-
-    for layer in model.layers:
-        for attr in ['kernel_regularizer']:
-            if hasattr(layer, attr):
-              setattr(layer, attr, regularizer)
-
-    # When we change the layers attributes, the change only happens in the model config file
-    model_json = model.to_json()
-
-    # Save the weights before reloading the model.
-    tmp_weights_path = os.path.join(tempfile.gettempdir(), 'tmp_weights.h5')
-    model.save_weights(tmp_weights_path)
-
-    # load the model from the config
-    model = tf.keras.models.model_from_json(model_json)
-    
-    # Reload the model weights
-    model.load_weights(tmp_weights_path, by_name=True)
-    return model
+from keras import backend as K
 
 
 BATCH_SIZE = 1
+
+data_augmentation = keras.Sequential(
+    [layers.RandomFlip("horizontal"), layers.RandomRotation(0.1),]
+)
 
 def to_grayscale_then_rgb(image):
     image = tf.image.rgb_to_grayscale(image)
@@ -76,7 +54,7 @@ class FeatureExtractor:
     def __init__(self, ds_selection = ""):
 
         self.ds_selection = ds_selection
-        itd = manipulating_images_better.ImagesToData(ds_selection = self.ds_selection)
+        itd = manipulating_images.ImagesToData(ds_selection = self.ds_selection)
         itd.bf_ml()
 
         CX = itd.CX
@@ -94,104 +72,65 @@ class FeatureExtractor:
         MY = itd.MY
         MYT = itd.MYT
 
-        batch_size = 12
+        batch_size = 8
         batch_fit = 8
 
-        validation_split = 0.1
-        
+        #validation_split = 0.1
+                
         chindatagen = ImageDataGenerator(
-            validation_split=validation_split,
+            #validation_split=validation_split,
             rescale=1/255,
     preprocessing_function=to_grayscale_then_rgb)
 
         chinvaldatagen = ImageDataGenerator(
-            validation_split=validation_split,
+            #validation_split=validation_split,
             rescale=1/255,
     preprocessing_function=to_grayscale_then_rgb)
 
         frendatagen = ImageDataGenerator(
-            validation_split=validation_split,
+            #validation_split=validation_split,
             rescale=1/255,
     preprocessing_function=to_grayscale_then_rgb)
 
         frenvaldatagen = ImageDataGenerator(
-            validation_split=validation_split,
+            #validation_split=validation_split,
             rescale=1/255,
     preprocessing_function=to_grayscale_then_rgb)
 
         ######################################################################################
         ############################# MODEL GENERATION #######################################
         #model = VGG16(weights='imagenet', include_top=False,  input_shape=(itd.size,itd.size,3))
-        base_model = tf.keras.applications.InceptionResNetV2(input_shape=(itd.size,itd.size,3), # define the input shape
-                                               include_top=False, # remove the classification layer
-                                               pooling='avg',
-                                               weights='imagenet') # use ImageNet pre-trained weights
-        base_model.trainable = True
-
-        # adding regularization
-        regularizer = tf.keras.regularizers.l2(0.0001)
-        base_model = add_regularization(base_model, regularizer=regularizer)
-        print(base_model.losses)
-
-        # Create the model
-        model = Sequential()
-        # Add the vgg convolutional base model
-        model.add(base_model)
-        model.trainable = False
-        #model.summary()
-        # Add new layers
-        model.add(Flatten())
-        '''model.add(Dense(800, activation='relu'))
-        model.add(Dropout(0.51))'''
-        #model.add(Dropout(0.30))
-        model.add(Dense(15, activation='relu', name = 'feature_extractor'))
-        
-        model.add(Dense(1, activation='sigmoid'))
-        # Show a summary of the model. Check the number of trainable parameters
-        # Freeze four convolution blocks
+        model = VGG19(weights='imagenet', include_top=False,  input_shape=(itd.size,itd.size,3))      
         model.trainable = True
-        for layer in model.layers[:len(model.layers)-3]:
-            layer.trainable = False
 
         ####################################################################################
         ###################### TRAINING LAST LAYERS AND FINE TUNING ########################
         print('RETRAINING')
         
-        ep = 40
+        ep = 20
+        eps_fine = 50
         verbose_param = 1
         
-        lr_reduce = ReduceLROnPlateau(monitor='val_accuracy', factor=0.2, patience=4, verbose=1, mode='max', min_lr=1e-8)
-        #checkpoint = ModelCheckpoint('vgg16_finetune.h15', monitor= 'val_accuracy', mode= 'max', save_best_only = True, verbose= 0)
-        early = EarlyStopping(monitor='val_accuracy', min_delta=0.001, patience=17, verbose=1, mode='auto')
-        
-        learning_rate= 2e-5
+        learning_rate= 2e-4
         
         adam = optimizers.Adam(learning_rate)
-        sgd = tf.keras.optimizers.SGD(learning_rate)
-        rmsprop = tf.keras.optimizers.RMSprop(learning_rate)
-        adadelta = tf.keras.optimizers.Adadelta(learning_rate)
-        adagrad = tf.keras.optimizers.Adagrad(learning_rate)
-        adamax = tf.keras.optimizers.Adamax(learning_rate)
+        sgd = optimizers.SGD(learning_rate)
+        rmsprop = optimizers.RMSprop(learning_rate)
+        adadelta = optimizers.Adadelta(learning_rate)
+        adagrad = optimizers.Adagrad(learning_rate)
+        adamax = optimizers.Adamax(learning_rate)
 
-        model.compile(loss="binary_crossentropy", optimizer=rmsprop, metrics=["accuracy"])
+        model.compile(loss="mse", optimizer=rmsprop, metrics=["accuracy"])
         #history = model.fit(X_train, y_train, batch_size = 1, epochs=50, validation_data=(X_test,y_test), callbacks=[lr_reduce,checkpoint])
         
         
         if self.ds_selection == "chinese":
             print('chinese')
-            chinese = chindatagen.flow_from_directory('../../FE/' + ds_selection + '/chinese',
+            chinese = chindatagen.flow_from_directory('../../FE/' ,
             target_size = (itd.size, itd.size),
             batch_size = batch_size,
             color_mode = 'rgb',
-            class_mode = 'binary',
-            subset = 'training')
-
-            chinese_val = chinvaldatagen.flow_from_directory('../../FE/' + ds_selection + '/chinese',
-            target_size = (itd.size, itd.size),
-            batch_size = batch_size,
-            class_mode = 'binary',
-            color_mode = 'rgb',
-            subset = 'validation')
+            class_mode = 'sparse')
 
             '''for i in chinese:
                 plt.figure()
@@ -200,80 +139,46 @@ class FeatureExtractor:
             
 
             Number_Of_Training_Images = chinese.classes.shape[0]
+            print(Number_Of_Training_Images)
             steps_per_epoch = Number_Of_Training_Images/batch_size
+            model.summary()
 
             history = model.fit(chinese, 
-            #batch_size = batch_size, 
-            epochs=ep, validation_data=chinese_val, 
-            #steps_per_epoch = steps_per_epoch,
-            callbacks=[early, lr_reduce],verbose=verbose_param)
+            epochs=ep, 
+            verbose=verbose_param)
 
+            
             
         if self.ds_selection == "french":
             print('french')
-            french = frendatagen.flow_from_directory('../../FE/' + ds_selection + '/french',
+            french = frendatagen.flow_from_directory('../../FE/' + ds_selection,
             target_size = (itd.size, itd.size),
             batch_size = batch_size,
-            class_mode = 'binary',
-            color_mode = 'rgb',
-            subset = 'training')
-
-            french_val = frenvaldatagen.flow_from_directory('../../FE/' + ds_selection + '/french',
-            target_size = (itd.size, itd.size),
-            batch_size = batch_size,
-            class_mode = 'binary',
-            color_mode = "rgb",
-            subset = 'validation')
+            class_mode = 'sparse',
+            color_mode = 'rgb')
 
             Number_Of_Training_Images = french.classes.shape[0]
             steps_per_epoch = Number_Of_Training_Images/batch_size
 
             history = model.fit(french,  
-            #steps_per_epoch = steps_per_epoch,
-            #batch_size = batch_size, 
-            epochs=ep, validation_data=french_val, callbacks=[early, lr_reduce], verbose=verbose_param)
+            epochs=ep, verbose=verbose_param)
 
+            
             
         if self.ds_selection == "mix":
             print('mix')
-            chinese = chindatagen.flow_from_directory('../../FE/' + ds_selection + '/chinese',
+            dataset = chindatagen.flow_from_directory('../../FE/' + ds_selection,
             target_size = (itd.size, itd.size),
             batch_size = batch_size,
-            class_mode = 'binary',
-            color_mode = "grayscale",
-            subset = 'training')
+            class_mode = 'sparse',
+            color_mode = "rgb")
 
-            chinese_val = chinvaldatagen.flow_from_directory('../../FE/' + ds_selection + '/chinese',
-            target_size = (itd.size, itd.size),
-            batch_size = batch_size,
-            class_mode = 'binary',
-            color_mode = "grayscale",
-            subset = 'validation')
-
-            french = frendatagen.flow_from_directory('../../FE/' + ds_selection + '/french',
-            target_size = (itd.size, itd.size),
-            batch_size = batch_size,
-            class_mode = 'binary',
-            color_mode = "grayscale",
-            subset = 'training')
-
-            french_val = frenvaldatagen.flow_from_directory('../../FE/' + ds_selection + '/french',
-            target_size = (itd.size, itd.size),
-            batch_size = batch_size,
-            class_mode = 'binary',
-            color_mode = "grayscale",
-            subset = 'validation')
-
-            dataset = tf.data.Dataset.zip((chinese, french))
-            dataset_val = tf.data.Dataset.zip((chinese_val, french_val))
 
             Number_Of_Training_Images = dataset.classes.shape[0]
             steps_per_epoch = Number_Of_Training_Images/batch_size
 
             history = model.fit(dataset,  
-            #steps_per_epoch = steps_per_epoch,
-            #batch_size = batch_size, 
-            epochs=ep, validation_data=dataset_val, callbacks=[early, lr_reduce], verbose=verbose_param)
+            epochs=ep, verbose=verbose_param)
 
             
         ##############################################################
@@ -311,13 +216,11 @@ class FeatureExtractor:
             plt.legend()
 
             plt.show()
-
                 
 
         #################################################
         ############# FEATURE EXTRACTION ################
         #print(model.layers[-2])
-        model = Model(inputs=model.inputs, outputs=model.get_layer(name="feature_extractor").output)
         
         #model.summary()
         
@@ -330,10 +233,6 @@ class FeatureExtractor:
             x = np.expand_dims(x, axis=0)
             feature = model.predict(x, verbose = 0)
             features.append(feature[0])
-
-        for i in features[0]:
-            print(i)
-
             
         self.CX = np.array(features)
         self.CY = CY

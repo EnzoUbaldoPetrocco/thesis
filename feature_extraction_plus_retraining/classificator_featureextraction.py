@@ -26,7 +26,7 @@ class SVCClassificator:
             try:
                 tf.config.experimental.set_virtual_device_configuration(
                     gpus[0],
-                    [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=3200)])
+                    [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=3000)])
                 logical_gpus = tf.config.experimental.list_logical_devices('GPU')
                 print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
             except RuntimeError as e:
@@ -45,7 +45,6 @@ class SVCClassificator:
                 ############################################################
                 ############### READ DATA ##################################
                 itd = FeatureExtractor(self.ds_selection)
-                
 
                 CX = itd.CX
                 CXT = itd.CXT
@@ -67,7 +66,7 @@ class SVCClassificator:
                 #####################################################################
                 ################### MODEL SELECTION (HYPERPARAMETER TUNING)##########
 
-                points = 50
+                points = 70
                 print('MODEL SELECTION AND TUNING')
                 if self.kernel == 'rbf':
                     logspaceC = np.logspace(-2,2.5,points)

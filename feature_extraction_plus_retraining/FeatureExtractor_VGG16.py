@@ -12,6 +12,7 @@ from tensorflow.keras.applications.inception_resnet_v2 import InceptionResNetV2
 from tensorflow.keras.preprocessing import image
 from tensorflow.keras.applications.vgg16 import preprocess_input
 import cv2
+from tensorflow import keras
 from keras.preprocessing.image import ImageDataGenerator
 from keras import layers, models, Model, optimizers
 from keras.callbacks import ReduceLROnPlateau, ModelCheckpoint, EarlyStopping
@@ -22,9 +23,14 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Dense
 from keras.layers import Input, Lambda, Dense, Flatten,Dropout
 from keras.models import Sequential
+from keras import backend as K
 
 
 BATCH_SIZE = 1
+
+data_augmentation = keras.Sequential(
+    [layers.RandomFlip("horizontal"), layers.RandomRotation(0.1),]
+)
 
 def to_grayscale_then_rgb(image):
     image = tf.image.rgb_to_grayscale(image)
@@ -66,11 +72,11 @@ class FeatureExtractor:
         MY = itd.MY
         MYT = itd.MYT
 
-        batch_size = 8
+        batch_size = 16
         batch_fit = 8
 
-        validation_split = 0.3
-        
+        validation_split = 0.1
+                
         chindatagen = ImageDataGenerator(
             validation_split=validation_split,
             rescale=1/255,
@@ -94,49 +100,51 @@ class FeatureExtractor:
         ######################################################################################
         ############################# MODEL GENERATION #######################################
         #model = VGG16(weights='imagenet', include_top=False,  input_shape=(itd.size,itd.size,3))
-        model_pre = InceptionV3(weights='imagenet', include_top=False,  input_shape=(itd.size,itd.size,3))
+        base_model = tf.keras.applications.VGG19(input_shape=(itd.size,itd.size,3), # define the input shape
+                                               include_top=False, # remove the classification layer
+                                               pooling='avg',
+                                               weights='imagenet') # use ImageNet pre-trained weights
+        base_model.trainable = True
+
+        for layer in base_model.layers[:len(base_model.layers)-4]:
+            layer.trainable = False
+        #base_model.summary()
         # Create the model
         model = Sequential()
         # Add the vgg convolutional base model
-        model.add(model_pre)
-        model.trainable = False
-        #model.summary()
-        # Add new layers
-        model.add(Flatten())
-        '''model.add(Dense(800, activation='relu'))
-        model.add(Dropout(0.51))'''
-        model.add(Dense(400, activation='relu', name = 'feature_extractor'))
-        model.add(Dropout(0.38))
+        model.add(base_model)
+        model.add(Dense(800, activation='relu'))
+        model.add(Dropout(0.5))
+        model.add(Dense(8, activation='relu', name='feature_extractor'))
+        #model.trainable = False
         model.add(Dense(1, activation='sigmoid'))
         # Show a summary of the model. Check the number of trainable parameters
         # Freeze four convolution blocks
         model.trainable = True
-        for layer in model.layers[:len(model.layers)-4]:
-            layer.trainable = False
 
         ####################################################################################
         ###################### TRAINING LAST LAYERS AND FINE TUNING ########################
         print('RETRAINING')
         
-        ep = 30
-        eps_fine = 30
+        ep = 20
+        eps_fine = 50
         verbose_param = 1
         
-        lr_reduce = ReduceLROnPlateau(monitor='val_accuracy', factor=0.2, patience=4, verbose=1, mode='max', min_lr=1e-8)
+        lr_reduce = ReduceLROnPlateau(monitor='val_binary_accuracy', factor=0.2, patience=4, verbose=1, mode='max', min_lr=1e-8)
         #checkpoint = ModelCheckpoint('vgg16_finetune.h15', monitor= 'val_accuracy', mode= 'max', save_best_only = True, verbose= 0)
-        early = EarlyStopping(monitor='val_accuracy', min_delta=0.001, patience=13, verbose=1, mode='auto')
+        early = EarlyStopping(monitor='val_binary_accuracy', min_delta=0.001, patience=20, verbose=1, mode='auto')
         
-        learning_rate= 1e-5
-        learning_rate_fine = 5e-6
+        learning_rate= 2.5e-4
+        learning_rate_fine = 1e-6
         
         adam = optimizers.Adam(learning_rate)
-        sgd = tf.keras.optimizers.SGD(learning_rate)
-        rmsprop = tf.keras.optimizers.RMSprop(learning_rate)
-        adadelta = tf.keras.optimizers.Adadelta(learning_rate)
-        adagrad = tf.keras.optimizers.Adagrad(learning_rate)
-        adamax = tf.keras.optimizers.Adamax(learning_rate)
+        sgd = optimizers.SGD(learning_rate)
+        rmsprop = optimizers.RMSprop(learning_rate)
+        adadelta = optimizers.Adadelta(learning_rate)
+        adagrad = optimizers.Adagrad(learning_rate)
+        adamax = optimizers.Adamax(learning_rate)
 
-        model.compile(loss="binary_crossentropy", optimizer=rmsprop, metrics=["accuracy"])
+        model.compile(loss=tf.keras.losses.BinaryCrossentropy(from_logits=False), optimizer=rmsprop, metrics=["binary_accuracy"])
         #history = model.fit(X_train, y_train, batch_size = 1, epochs=50, validation_data=(X_test,y_test), callbacks=[lr_reduce,checkpoint])
         
         
@@ -164,23 +172,25 @@ class FeatureExtractor:
 
             Number_Of_Training_Images = chinese.classes.shape[0]
             steps_per_epoch = Number_Of_Training_Images/batch_size
+            model.summary()
 
             history = model.fit(chinese, 
-            #batch_size = batch_size, 
             epochs=ep, validation_data=chinese_val, 
-            #steps_per_epoch = steps_per_epoch,
             callbacks=[early, lr_reduce],verbose=verbose_param)
 
             model.trainable = True
+
+
+            #K.set_value(model.optimizer.learning_rate, learning_rate_fine)
             #model.summary()
-            rmsprop = tf.keras.optimizers.RMSprop(learning_rate_fine)
-            model.compile(loss="binary_crossentropy", optimizer=rmsprop, metrics=["accuracy"])
             
+            rmsprop = optimizers.RMSprop(learning_rate_fine)
+            model.compile(loss="binary_crossentropy", optimizer=rmsprop, metrics=["binary_accuracy"])
+
             history_fine = model.fit(chinese, 
-            #batch_size = batch_size, 
-            epochs=eps_fine, validation_data=chinese_val, 
-            #steps_per_epoch = steps_per_epoch,
+            epochs=eps_fine, validation_data=chinese_val,
             callbacks=[early, lr_reduce],verbose=verbose_param)
+            print('there')
             
             
         if self.ds_selection == "french":
@@ -203,71 +213,42 @@ class FeatureExtractor:
             steps_per_epoch = Number_Of_Training_Images/batch_size
 
             history = model.fit(french,  
-            #steps_per_epoch = steps_per_epoch,
-            #batch_size = batch_size, 
             epochs=ep, validation_data=french_val, callbacks=[early, lr_reduce], verbose=verbose_param)
 
             model.trainable = True
-            #model.summary()
-            rmsprop = tf.keras.optimizers.RMSprop(learning_rate_fine)
-            model.compile(loss="binary_crossentropy", optimizer=rmsprop, metrics=["accuracy"])
+            K.set_value(model.optimizer.learning_rate, learning_rate_fine)
             
             history_fine = model.fit(french, 
-            #batch_size = batch_size, 
-            epochs=eps_fine, validation_data=french_val, 
-            #steps_per_epoch = steps_per_epoch,
+            epochs=eps_fine, validation_data=french_val,
             callbacks=[early, lr_reduce],verbose=verbose_param)
             
         if self.ds_selection == "mix":
             print('mix')
-            chinese = chindatagen.flow_from_directory('../../FE/' + ds_selection + '/chinese',
+            dataset = chindatagen.flow_from_directory('../../FE/' + ds_selection,
             target_size = (itd.size, itd.size),
             batch_size = batch_size,
             class_mode = 'binary',
-            color_mode = "grayscale",
+            color_mode = "rgb",
             subset = 'training')
 
-            chinese_val = chinvaldatagen.flow_from_directory('../../FE/' + ds_selection + '/chinese',
+            dataset_val = chinvaldatagen.flow_from_directory('../../FE/' + ds_selection,
             target_size = (itd.size, itd.size),
             batch_size = batch_size,
             class_mode = 'binary',
-            color_mode = "grayscale",
+            color_mode = "rgb",
             subset = 'validation')
-
-            french = frendatagen.flow_from_directory('../../FE/' + ds_selection + '/french',
-            target_size = (itd.size, itd.size),
-            batch_size = batch_size,
-            class_mode = 'binary',
-            color_mode = "grayscale",
-            subset = 'training')
-
-            french_val = frenvaldatagen.flow_from_directory('../../FE/' + ds_selection + '/french',
-            target_size = (itd.size, itd.size),
-            batch_size = batch_size,
-            class_mode = 'binary',
-            color_mode = "grayscale",
-            subset = 'validation')
-
-            dataset = tf.data.Dataset.zip((chinese, french))
-            dataset_val = tf.data.Dataset.zip((chinese_val, french_val))
 
             Number_Of_Training_Images = dataset.classes.shape[0]
             steps_per_epoch = Number_Of_Training_Images/batch_size
 
             history = model.fit(dataset,  
-            #steps_per_epoch = steps_per_epoch,
-            #batch_size = batch_size, 
             epochs=eps_fine, validation_data=dataset_val, callbacks=[early, lr_reduce], verbose=verbose_param)
 
             model.trainable = True
-            #model.summary()
-            rmsprop = tf.keras.optimizers.RMSprop(learning_rate_fine)
-            model.compile(loss="binary_crossentropy", optimizer=rmsprop, metrics=["accuracy"])
+            K.set_value(model.optimizer.learning_rate, learning_rate_fine)
             
             history_fine = model.fit(dataset, 
-            #batch_size = batch_size, 
             epochs=ep, validation_data=dataset_val, 
-            #steps_per_epoch = steps_per_epoch,
             callbacks=[early, lr_reduce],verbose=verbose_param)
             
         ##############################################################
