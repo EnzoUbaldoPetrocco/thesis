@@ -67,7 +67,7 @@ class FeatureExtractor:
         MY = itd.MY
         MYT = itd.MYT
 
-        batch_size = 2
+        batch_size = 1
 
         validation_split = 0.1
         
@@ -94,14 +94,14 @@ class FeatureExtractor:
         ######################################################################################
         ############################# MODEL GENERATION #######################################
         #model = VGG16(weights='imagenet', include_top=False,  input_shape=(itd.size,itd.size,3))
-        base_model = Xception(weights='imagenet', include_top=False,  input_shape=(itd.size,itd.size,3))
+        base_model = InceptionResNetV2(weights='imagenet', include_top=False,  input_shape=(itd.size,itd.size,3))
         base_model.trainable = True
 
         inputs = tf.keras.Input(shape=(itd.size, itd.size, 3))
         x = base_model(inputs, training=True)
         outputs = tf.keras.layers.Dense(1)(x)
         model = tf.keras.Model(inputs, outputs)
-        model.summary()
+        #model.summary()
 
         ####################################################################################
         ###################### TRAINING LAST LAYERS AND FINE TUNING ########################
@@ -114,7 +114,7 @@ class FeatureExtractor:
         #checkpoint = ModelCheckpoint('vgg16_finetune.h15', monitor= 'val_accuracy', mode= 'max', save_best_only = True, verbose= 0)
         early = EarlyStopping(monitor='val_accuracy', min_delta=0.001, patience=18, verbose=1, mode='auto')
         
-        learning_rate= 1e-5
+        learning_rate= 1e-6
         
         adam = optimizers.Adam(learning_rate)
         sgd = tf.keras.optimizers.SGD(learning_rate)
@@ -253,7 +253,7 @@ class FeatureExtractor:
         #print(model.layers[-2])
         #model = Model(inputs=model.inputs, outputs=model.layers[:-2])
         model.layers.pop()        
-        model.summary()
+        #model.summary()
         
         print('FEATURE EXTRACTION')
         features = []
@@ -265,8 +265,8 @@ class FeatureExtractor:
             feature = model.predict(x, verbose = 0)
             features.append(feature[0].flatten())
 
-        for i in features[0]:
-            print(i)
+        '''for i in features[0]:
+            print(i)'''
 
             
         self.CX = np.array(features)
