@@ -284,13 +284,13 @@ class ImagesToData:
 
     self.MFX = list(self.FX)
     self.MFY = list(self.FY)
-    for i in range(25):
-      index = random.randint(0,len(self.FX)-11)
+    for i in range(int(len(self.CX)*0.1)):
+      index = random.randint(0,len(self.FX)-1)
       self.MCX.append(self.FX[index])
       self.MCY.append(self.FY[index])
 
-    for i in range(25):
-      index = random.randint(0,len(self.FX)-11)
+    for i in range(int(len(self.FX)*0.1)):
+      index = random.randint(0,len(self.FX)-1)
       self.MFX.append(self.CX[index])
       self.MFY.append(self.CY[index])
 

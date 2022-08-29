@@ -21,11 +21,32 @@ from skimage.color import gray2rgb
 from matplotlib import pyplot as plt
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Dense
+import keras.layers as L
 from keras.layers import Input, Lambda, Dense, Flatten,Dropout, MaxPooling3D
 from keras.models import Sequential
+from tensorflow.keras.applications.efficientnet_v2 import EfficientNetV2S
+from tensorflow.keras.applications import efficientnet
+from tensorflow.keras.applications.efficientnet import EfficientNetB5
+from keras import backend as K
+'''config = tf.compat.v1.ConfigProto()
+config.gpu_options.allow_growth = True
+session = tf.compat.v1.Session(config=config)'''
+import torch
+import os
 
 
 BATCH_SIZE = 1
+
+def unfreeze_model(model, layers_n):
+    # We unfreeze the top 20 layers while leaving BatchNorm layers frozen
+    for layer in model.layers[-layers_n:]:
+        if not isinstance(layer, layers.BatchNormalization):
+            layer.trainable = True
+
+    optimizer = tf.keras.optimizers.Adam(learning_rate=1e-4)
+    model.compile(
+        optimizer=optimizer, loss="categorical_crossentropy", metrics=["accuracy"]
+    )
 
 def to_grayscale_then_rgb(image):
     image = tf.image.rgb_to_grayscale(image)
@@ -47,73 +68,95 @@ def batch_generator(X, Y, batch_size = BATCH_SIZE):
 
 class FeatureExtractor:
     def __init__(self, ds_selection = ""):
+        device = torch.device('cpu')
 
         self.ds_selection = ds_selection
         itd = manipulating_images_better.ImagesToData(ds_selection = self.ds_selection)
         itd.bf_ml()
 
-        itd.little_mix()
-        MCX = itd.MCX
+        CX = itd.CX
         CXT = itd.CXT
-        MCY = itd.MCY
+        CY = itd.CY
         CYT = itd.CYT
 
-        MFX = itd.MFX
+        FX = itd.FX
         FXT = itd.FXT
-        MFY = itd.MFY
+        FY = itd.FY
         FYT = itd.FYT
 
+        MX = itd.MX
         MXT = itd.MXT
+        MY = itd.MY
         MYT = itd.MYT
 
-        batch_size = 16
+        batch_size = 2
 
         validation_split = 0.1
         
         chindatagen = ImageDataGenerator(
             validation_split=validation_split,
-            rescale=1/255,
+            #rescale=1/255,
     preprocessing_function=to_grayscale_then_rgb)
 
         chinvaldatagen = ImageDataGenerator(
             validation_split=validation_split,
-            rescale=1/255,
+            #rescale=1/255,
     preprocessing_function=to_grayscale_then_rgb)
 
         frendatagen = ImageDataGenerator(
             validation_split=validation_split,
-            rescale=1/255,
+            #rescale=1/255,
     preprocessing_function=to_grayscale_then_rgb)
 
         frenvaldatagen = ImageDataGenerator(
             validation_split=validation_split,
-            rescale=1/255,
+            #rescale=1/255,
     preprocessing_function=to_grayscale_then_rgb)
 
         ######################################################################################
         ############################# MODEL GENERATION #######################################
-        #model = VGG16(weights='imagenet', include_top=False,  input_shape=(itd.size,itd.size,3))
-        base_model = Xception(weights='imagenet', include_top=False,  input_shape=(itd.size,itd.size,3))
-        base_model.trainable = True
-
-        inputs = tf.keras.Input(shape=(itd.size, itd.size, 3))
-        x = base_model(inputs, training=True)
-        outputs = tf.keras.layers.Dense(1)(x)
-        model = tf.keras.Model(inputs, outputs)
-        model.summary()
+        
+        model = tf.keras.Sequential([
+        EfficientNetB5( #tf.keras.applications.efficientnet.EfficientNetB0
+            input_shape=(itd.size, itd.size, 3),
+            weights='imagenet',
+            include_top=False
+        )#,
+        #L.GlobalAveragePooling2D()#,
+        #L.Dense(1, activation='sigmoid')
+    ])
+        
+        model.add(Flatten())
+        model.add(Dropout(0.15))
+        model.add(Dense(8, activation='relu', name='feature_extractor'))
+        model.add(Dense(1, activation='sigmoid'))
+        model.trainable = True
+        '''for layer in model.layers[:len(model.layers)-4]:
+            layer.trainable = False'''
+        '''for layer in model.layers[0].layers[:len(model.layers[0].layers)-5]:
+            layer.trainable = False'''
+        for layer in model.layers[0].layers:
+            layer.trainable = False
+        # We unfreeze the top 20 layers while leaving BatchNorm layers frozen
+        for layer in model.layers[0].layers[-55:]:
+            if not isinstance(layer, layers.BatchNormalization):
+                layer.trainable = True
+        #model.summary()
 
         ####################################################################################
         ###################### TRAINING LAST LAYERS AND FINE TUNING ########################
         print('RETRAINING')
         
-        ep = 40
+        ep = 100
+        eps_fine = 10
         verbose_param = 1
         
         lr_reduce = ReduceLROnPlateau(monitor='val_accuracy', factor=0.2, patience=3, verbose=1, mode='max', min_lr=1e-8)
         #checkpoint = ModelCheckpoint('vgg16_finetune.h15', monitor= 'val_accuracy', mode= 'max', save_best_only = True, verbose= 0)
-        early = EarlyStopping(monitor='val_accuracy', min_delta=0.001, patience=18, verbose=1, mode='auto')
+        early = EarlyStopping(monitor='val_accuracy', min_delta=0.001, patience=13, verbose=1, mode='auto')
         
-        learning_rate= 1e-3
+        learning_rate= 4e-3
+        learning_rate_fine = 1e-8
         
         adam = optimizers.Adam(learning_rate)
         sgd = tf.keras.optimizers.SGD(learning_rate)
@@ -122,9 +165,11 @@ class FeatureExtractor:
         adagrad = tf.keras.optimizers.Adagrad(learning_rate)
         adamax = tf.keras.optimizers.Adamax(learning_rate)
 
-        model.compile(loss="binary_crossentropy", optimizer=rmsprop, metrics=["accuracy"])
+        optimizer = sgd
+        fine_optimizer = optimizers.SGD(learning_rate_fine)
+
+        model.compile(loss="binary_crossentropy", optimizer=optimizer, metrics=["accuracy"])
         #history = model.fit(X_train, y_train, batch_size = 1, epochs=50, validation_data=(X_test,y_test), callbacks=[lr_reduce,checkpoint])
-        
         
         if self.ds_selection == "chinese":
             print('chinese')
@@ -146,17 +191,24 @@ class FeatureExtractor:
                 plt.figure()
                 plt.imshow(i[0][0])
                 plt.show()'''
+
             
 
             Number_Of_Training_Images = chinese.classes.shape[0]
             steps_per_epoch = Number_Of_Training_Images/batch_size
+
+            os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+
+            device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+            print('Using device:' , device)
+            model.cuda()
 
             history = model.fit(chinese, 
             #batch_size = batch_size, 
             epochs=ep, validation_data=chinese_val, 
             #steps_per_epoch = steps_per_epoch,
             callbacks=[early, lr_reduce],verbose=verbose_param)
-
+            device = torch.device('cpu')
             
         if self.ds_selection == "french":
             print('french')
@@ -177,11 +229,13 @@ class FeatureExtractor:
             Number_Of_Training_Images = french.classes.shape[0]
             steps_per_epoch = Number_Of_Training_Images/batch_size
 
-            history = model.fit(french,  
-            #steps_per_epoch = steps_per_epoch,
-            #batch_size = batch_size, 
-            epochs=ep, validation_data=french_val, callbacks=[early, lr_reduce], verbose=verbose_param)
-
+            os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+            device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+            print('Using device:' , device)
+            history = model.fit(french, epochs=ep, 
+            validation_data=french_val, callbacks=[early, lr_reduce], verbose=verbose_param)
+            device = torch.device('cpu')            
+            
             
         if self.ds_selection == "mix":
             print('mix')
@@ -202,11 +256,13 @@ class FeatureExtractor:
             
             Number_Of_Training_Images = dataset.classes.shape[0]
             steps_per_epoch = Number_Of_Training_Images/batch_size
-
+            os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+            device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+            print('Using device:' , device)
             history = model.fit(dataset,  
             steps_per_epoch = steps_per_epoch,
-            #batch_size = batch_size, 
             epochs=ep, validation_data=dataset_val, callbacks=[early, lr_reduce], verbose=verbose_param)
+            device = torch.device('cpu')
 
             
         ##############################################################
@@ -252,20 +308,19 @@ class FeatureExtractor:
         #print(model.layers[-2])
         #model = Model(inputs=model.inputs, outputs=model.layers[:-2])
         model.layers.pop()        
-        model.summary()
+        #model.summary()
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        print('Using device:' , device)
         
         print('FEATURE EXTRACTION')
         features = []
         for i in CX:
-            x = np.reshape(i, (itd.size,itd.size))
+            x = np.reshape(i, (itd.size,itd.size))*255
             x = cv2.merge([x,x,x])
             x = image.img_to_array(x)
             x = np.expand_dims(x, axis=0)
             feature = model.predict(x, verbose = 0)
-            features.append(feature[0])
-
-        for i in features[0]:
-            print(i)
+            features.append(feature[0].flatten())
 
             
         self.CX = np.array(features)
@@ -273,72 +328,65 @@ class FeatureExtractor:
 
         features = []
         for i in CXT:
-            x = np.reshape(i, (itd.size,itd.size))
+            x = np.reshape(i, (itd.size,itd.size))*255
             x = cv2.merge([x,x,x])
             x = image.img_to_array(x)
             x = np.expand_dims(x, axis=0)
             feature = model.predict(x, verbose = 0)
-            features.append(feature[0])
+            features.append(feature[0].flatten())
         
         self.CXT = np.array(features)
         self.CYT = CYT
 
         features = []
         for i in FX:
-            x = np.reshape(i, (itd.size,itd.size))
+            x = np.reshape(i, (itd.size,itd.size))*255
             x = cv2.merge([x,x,x])
             x = image.img_to_array(x)
             x = np.expand_dims(x, axis=0)
             feature = model.predict(x, verbose = 0)
-            features.append(feature[0])
+            features.append(feature[0].flatten())
         
         self.FX = np.array(features)
         self.FY = FY
 
         features = []
         for i in FXT:
-            x = np.reshape(i, (itd.size,itd.size))
+            x = np.reshape(i, (itd.size,itd.size))*255
             x = cv2.merge([x,x,x])
             x = image.img_to_array(x)
             x = np.expand_dims(x, axis=0)
             feature = model.predict(x, verbose = 0)
-            features.append(feature[0])
+            features.append(feature[0].flatten())
         
         self.FXT = np.array(features)
         self.FYT = FYT
 
         features = []
         for i in MX:
-            x = np.reshape(i, (itd.size,itd.size))
+            x = np.reshape(i, (itd.size,itd.size))*255
             x = cv2.merge([x,x,x])
             x = image.img_to_array(x)
             x = np.expand_dims(x, axis=0)
             feature = model.predict(x, verbose = 0)
-            features.append(feature[0])
+            features.append(feature[0].flatten())
         
         self.MX = np.array(features)
         self.MY = MY
 
         features = []
         for i in MXT:
-            x = np.reshape(i, (itd.size,itd.size))
+            x = np.reshape(i, (itd.size,itd.size))*255
             x = cv2.merge([x,x,x])
             x = image.img_to_array(x)
             x = np.expand_dims(x, axis=0)
             feature = model.predict(x, verbose = 0)
-            features.append(feature[0])
+            features.append(feature[0].flatten())
         
         self.MXT = np.array(features)
         self.MYT = MYT
 
         
+        device = torch.device('cpu') 
 
         
-
-
-
-
-
-
-
-

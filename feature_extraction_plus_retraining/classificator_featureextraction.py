@@ -6,11 +6,17 @@ import matplotlib.pyplot as plt
 from sklearn.svm import SVC
 from sklearn.model_selection import GridSearchCV
 from torch import logspace
-from FeatureExtractor_VGG16_v2 import FeatureExtractor
+from FeatureExtractor_EfficientNet import FeatureExtractor
 from math import floor
 from sklearn.metrics import confusion_matrix
 import tensorflow as tf
+'''config = tf.compat.v1.ConfigProto()
+config.gpu_options.allow_growth = True
+session = tf.compat.v1.Session(config=config)'''
 import torch
+import os
+#CUDA_VISIBLE_DEVICES=""
+#os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 
 class SVCClassificator:
 
@@ -20,16 +26,20 @@ class SVCClassificator:
 
     def execute(self):
 
-        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        #device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        device = torch.device('cpu')
         print('Using device:' , device)
-        '''
-        gpus = tf.config.experimental.list_physical_devices('GPU')
+        gpus = tf.config.experimental.list_physical_devices('CPU')
+        
+        '''gpus = tf.config.experimental.list_physical_devices('GPU')
+        for device in gpus:
+                tf.config.experimental.set_memory_growth(device, True)
         if gpus:
         # Restrict TensorFlow to only allocate 2GB of memory on the first GPU
             try:
                 tf.config.experimental.set_virtual_device_configuration(
                     gpus[0],
-                    [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=3200)])
+                    [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=3000)])
                 logical_gpus = tf.config.experimental.list_logical_devices('GPU')
                 print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
             except RuntimeError as e:
@@ -68,8 +78,9 @@ class SVCClassificator:
 
                 #####################################################################
                 ################### MODEL SELECTION (HYPERPARAMETER TUNING)##########
-
-                points = 70
+                device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+                print('Using device:' , device)
+                points = 80
                 print('MODEL SELECTION AND TUNING')
                 if self.kernel == 'rbf':
                     logspaceC = np.logspace(-2,2.5,points)
@@ -85,12 +96,14 @@ class SVCClassificator:
                                 scoring = 'balanced_accuracy',
                                 cv = 10,
                                 verbose = 0)
+
+
                 if self.ds_selection == "chinese":
                     H = MS.fit(CX,CY)
                 if self.ds_selection == "french":
                     H = MS.fit(FX,FY)
                 if self.ds_selection == "mix":
-                    H = MS.fit(MX,MY)
+                    H = MS.fit(MX,MY)          
                 
                 print('CLASSIFICATION')
                 print('C best param')
@@ -108,9 +121,11 @@ class SVCClassificator:
                     M = MS.fit(FX,FY)
                 if self.ds_selection == "mix":
                     M = MS.fit(MX,MY)
+
+                
                 ####################################################
                 ################## TESTING #########################
-
+                
                 print('PREDICTING CHINESE TEST SET')
                 CYF = M.predict(CXT)
                 cm = confusion_matrix(CYT,CYF)
@@ -126,6 +141,9 @@ class SVCClassificator:
                 cm = confusion_matrix(MYT,MYF)
                 print(cm)
                 Mcm_list.append(cm)
+                device = torch.device('cpu')  
+
+                
 
 
         ######################################################

@@ -17,7 +17,7 @@ from torch import randint
 import os, shutil
 
 
-size = 200
+size = 128
 total_n_images = 469
 
 class ImagesToData:
@@ -237,8 +237,8 @@ class ImagesToData:
 
   def prepare_ds(self):
     ### Divisions
-    first = int(270*(1-self.prop))
-    second = int((270 + 110)*(1-self.prop))
+    first = int(280*(1-self.prop))
+    second = int((280 + 100)*(1-self.prop))
     fin = int(total_n_images*(1-self.prop))
     
 

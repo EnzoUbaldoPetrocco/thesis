@@ -8,6 +8,8 @@ from tensorflow.keras.applications.vgg19 import VGG19
 from tensorflow.keras.applications.xception import Xception
 from tensorflow.keras.applications.inception_v3 import InceptionV3
 from tensorflow.keras.applications.inception_resnet_v2 import InceptionResNetV2
+from tensorflow.keras.applications.efficientnet_v2 import EfficientNetV2L
+from tensorflow.keras.applications.efficientnet_v2 import EfficientNetV2S
 from tensorflow.keras.preprocessing import image
 from keras.applications.vgg16 import preprocess_input
 import cv2
@@ -21,6 +23,7 @@ from keras.models import Model
 from keras.layers import Dense
 from keras.layers import Input, Lambda, Dense, Flatten,Dropout
 from keras.models import Sequential
+import torch
 
 
 def to_grayscale_then_rgb(image):
@@ -30,6 +33,10 @@ def to_grayscale_then_rgb(image):
 
 class FeatureExtractor:
     def __init__(self, ds_selection = ""):
+        device = torch.device('cpu')
+        print('Using device:' , device)
+
+        gpus = tf.config.experimental.list_physical_devices('CPU')
 
         self.ds_selection = ds_selection
         itd = manipulating_images_better.ImagesToData(ds_selection = self.ds_selection)
@@ -50,8 +57,8 @@ class FeatureExtractor:
         MY = itd.MY
         MYT = itd.MYT
 
-        batch_size = 8
-        validation_split = 0.1
+        batch_size = 2
+        validation_split = 0.15
         
         chindatagen = ImageDataGenerator(
             validation_split=validation_split,
@@ -75,21 +82,26 @@ class FeatureExtractor:
 
         ######################################################################################
         ############################# MODEL GENERATION #######################################
-        base_model = tf.keras.applications.InceptionResNetV2(input_shape=(itd.size,itd.size,3), # define the input shape
+        base_model = tf.keras.applications.EfficientNetV2S(input_shape=(itd.size,itd.size,3), # define the input shape
                                                include_top=False, # remove the classification layer
                                                pooling='avg',
                                                weights='imagenet') # use ImageNet pre-trained weights
-        '''base_model.trainable = True
-        for layer in base_model.layers[:len(base_model.layers)-4]:
-            layer.trainable = False'''
+        base_model.trainable = True
+        
         model = Sequential()
+        
         model.add(base_model)
-        model.add(Dropout(0.5))
-        model.add(Dense(8, activation='relu', name='feature_extractor'))
+        model.add(Flatten())
+        model.add(Dropout(0.1))
+        model.add(Dense(50, activation='relu', name='feature_extractor'))
         model.add(Dense(1, activation='sigmoid'))
         model.trainable = True
-        '''for layer in model.layers[:len(model.layers)-3]:
-            layer.trainable = False'''
+        for layer in model.layers[:len(model.layers)-4]:
+            layer.trainable = False
+        model.layers[0].trainable = True
+        for layer in model.layers[0].layers[:len(base_model.layers)-50]:
+            layer.trainable = False
+        model.summary()
 
         ####################################################################################
         ###################### TRAINING LAST LAYERS AND FINE TUNING ########################
@@ -98,8 +110,8 @@ class FeatureExtractor:
         ep = 40
         verbose_param = 1    
         lr_reduce = ReduceLROnPlateau(monitor='val_accuracy', factor=0.2, patience=3, verbose=1, mode='max', min_lr=1e-8)
-        early = EarlyStopping(monitor='val_accuracy', min_delta=0.001, patience=11, verbose=1, mode='auto')
-        learning_rate= 1.8e-5
+        early = EarlyStopping(monitor='val_accuracy', min_delta=0.001, patience=13, verbose=1, mode='auto')
+        learning_rate= 1e-3
         
         adam = optimizers.Adam(learning_rate)
         sgd = tf.keras.optimizers.SGD(learning_rate)

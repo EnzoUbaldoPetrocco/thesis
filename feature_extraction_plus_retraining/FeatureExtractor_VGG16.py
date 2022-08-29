@@ -24,6 +24,7 @@ from tensorflow.keras.layers import Dense
 from keras.layers import Input, Lambda, Dense, Flatten,Dropout
 from keras.models import Sequential
 from keras import backend as K
+from tensorflow.keras.applications import EfficientNetB0
 
 
 BATCH_SIZE = 1
@@ -181,7 +182,7 @@ class FeatureExtractor:
             model.trainable = True
 
 
-            #K.set_value(model.optimizer.learning_rate, learning_rate_fine)
+            K.set_value(model.optimizer.learning_rate, learning_rate_fine)
             #model.summary()
             
             rmsprop = optimizers.RMSprop(learning_rate_fine)

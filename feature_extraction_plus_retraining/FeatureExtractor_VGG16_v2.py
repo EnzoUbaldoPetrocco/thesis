@@ -23,6 +23,12 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Dense
 from keras.layers import Input, Lambda, Dense, Flatten,Dropout, MaxPooling3D
 from keras.models import Sequential
+from tensorflow.keras.applications.efficientnet_v2 import EfficientNetV2S
+'''config = tf.compat.v1.ConfigProto()
+config.gpu_options.allow_growth = True
+session = tf.compat.v1.Session(config=config)'''
+import torch
+import os
 
 
 BATCH_SIZE = 1
@@ -47,6 +53,7 @@ def batch_generator(X, Y, batch_size = BATCH_SIZE):
 
 class FeatureExtractor:
     def __init__(self, ds_selection = ""):
+        device = torch.device('cpu')
 
         self.ds_selection = ds_selection
         itd = manipulating_images_better.ImagesToData(ds_selection = self.ds_selection)
@@ -67,7 +74,7 @@ class FeatureExtractor:
         MY = itd.MY
         MYT = itd.MYT
 
-        batch_size = 1
+        batch_size = 2
 
         validation_split = 0.1
         
@@ -94,27 +101,29 @@ class FeatureExtractor:
         ######################################################################################
         ############################# MODEL GENERATION #######################################
         #model = VGG16(weights='imagenet', include_top=False,  input_shape=(itd.size,itd.size,3))
-        base_model = InceptionResNetV2(weights='imagenet', include_top=False,  input_shape=(itd.size,itd.size,3))
+        base_model = VGG19(weights='imagenet', include_top=False,  input_shape=(itd.size,itd.size,3))
         base_model.trainable = True
+        for layer in base_model.layers[:len(base_model.layers)-15]:
+            layer.trainable = False
 
         inputs = tf.keras.Input(shape=(itd.size, itd.size, 3))
-        x = base_model(inputs, training=True)
+        x = base_model(inputs)#, training=True)
         outputs = tf.keras.layers.Dense(1)(x)
         model = tf.keras.Model(inputs, outputs)
-        #model.summary()
+        model.summary()
 
         ####################################################################################
         ###################### TRAINING LAST LAYERS AND FINE TUNING ########################
         print('RETRAINING')
         
-        ep = 40
+        ep = 100
         verbose_param = 1
         
-        lr_reduce = ReduceLROnPlateau(monitor='val_accuracy', factor=0.2, patience=3, verbose=1, mode='max', min_lr=1e-8)
+        lr_reduce = ReduceLROnPlateau(monitor='val_accuracy', factor=0.25, patience=3, verbose=1, mode='max', min_lr=1e-8)
         #checkpoint = ModelCheckpoint('vgg16_finetune.h15', monitor= 'val_accuracy', mode= 'max', save_best_only = True, verbose= 0)
-        early = EarlyStopping(monitor='val_accuracy', min_delta=0.001, patience=18, verbose=1, mode='auto')
+        early = EarlyStopping(monitor='val_accuracy', min_delta=0.001, patience=21, verbose=1, mode='auto')
         
-        learning_rate= 1e-6
+        learning_rate= 1e-4
         
         adam = optimizers.Adam(learning_rate)
         sgd = tf.keras.optimizers.SGD(learning_rate)
@@ -123,9 +132,8 @@ class FeatureExtractor:
         adagrad = tf.keras.optimizers.Adagrad(learning_rate)
         adamax = tf.keras.optimizers.Adamax(learning_rate)
 
-        model.compile(loss="binary_crossentropy", optimizer=rmsprop, metrics=["accuracy"])
+        model.compile(loss="binary_crossentropy", optimizer=sgd, metrics=["accuracy"])
         #history = model.fit(X_train, y_train, batch_size = 1, epochs=50, validation_data=(X_test,y_test), callbacks=[lr_reduce,checkpoint])
-        
         
         if self.ds_selection == "chinese":
             print('chinese')
@@ -152,11 +160,17 @@ class FeatureExtractor:
             Number_Of_Training_Images = chinese.classes.shape[0]
             steps_per_epoch = Number_Of_Training_Images/batch_size
 
+            os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+
+            device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+            #print('Using device:' , device)
+
             history = model.fit(chinese, 
             #batch_size = batch_size, 
             epochs=ep, validation_data=chinese_val, 
             #steps_per_epoch = steps_per_epoch,
             callbacks=[early, lr_reduce],verbose=verbose_param)
+            device = torch.device('cpu')
 
             
         if self.ds_selection == "french":
