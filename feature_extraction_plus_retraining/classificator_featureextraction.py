@@ -15,6 +15,8 @@ config.gpu_options.allow_growth = True
 session = tf.compat.v1.Session(config=config)'''
 import torch
 import os
+import gc 
+#os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 #CUDA_VISIBLE_DEVICES=""
 #os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 
@@ -27,9 +29,9 @@ class SVCClassificator:
     def execute(self):
 
         #device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        device = torch.device('cpu')
-        print('Using device:' , device)
-        gpus = tf.config.experimental.list_physical_devices('CPU')
+        #device = torch.device('cpu')
+        #print('Using device:' , device)
+        #gpus = tf.config.experimental.list_physical_devices('CPU')
         
         '''gpus = tf.config.experimental.list_physical_devices('GPU')
         for device in gpus:
@@ -39,7 +41,7 @@ class SVCClassificator:
             try:
                 tf.config.experimental.set_virtual_device_configuration(
                     gpus[0],
-                    [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=3000)])
+                    [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=3800)])
                 logical_gpus = tf.config.experimental.list_logical_devices('GPU')
                 print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
             except RuntimeError as e:
@@ -47,14 +49,32 @@ class SVCClassificator:
                 print(e)
         else:
             print('no gpus')'''
+        
+
         # Confusion matrix lists
         Ccm_list = []
         Fcm_list = []
         Mcm_list = []
 
-        for i in range(50):
+        for i in range(30):
+                gpus = tf.config.list_physical_devices('CPU')
                 print('CICLE: ' + str(i))
-
+                '''gc.collect()
+                torch.cuda.empty_cache()
+                gpus = tf.config.list_physical_devices('GPU')
+                if gpus:
+                # Restrict TensorFlow to only allocate 1GB of memory on the first GPU
+                        try:
+                                tf.config.set_logical_device_configuration(
+                                gpus[0],
+                                [tf.config.LogicalDeviceConfiguration(memory_limit=3000)])
+                                logical_gpus = tf.config.list_logical_devices('GPU')
+                                print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
+                        except RuntimeError as e:
+                # Virtual devices must be set before GPUs have been initialized
+                                print(e)
+                else:
+                        print('Using CPU')'''
                 ############################################################
                 ############### READ DATA ##################################
                 itd = FeatureExtractor(self.ds_selection)
@@ -78,8 +98,8 @@ class SVCClassificator:
 
                 #####################################################################
                 ################### MODEL SELECTION (HYPERPARAMETER TUNING)##########
-                device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-                print('Using device:' , device)
+                #device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+                #print('Using device:' , device)
                 points = 80
                 print('MODEL SELECTION AND TUNING')
                 if self.kernel == 'rbf':
@@ -141,7 +161,7 @@ class SVCClassificator:
                 cm = confusion_matrix(MYT,MYF)
                 print(cm)
                 Mcm_list.append(cm)
-                device = torch.device('cpu')  
+                #device = torch.device('cpu')  
 
                 
 

@@ -73,20 +73,19 @@ class FeatureExtractor:
         self.ds_selection = ds_selection
         itd = manipulating_images_better.ImagesToData(ds_selection = self.ds_selection)
         itd.bf_ml()
+        itd.little_mix()
 
-        CX = itd.CX
+        MCX = itd.MCX
         CXT = itd.CXT
-        CY = itd.CY
+        MCY = itd.MCY
         CYT = itd.CYT
 
-        FX = itd.FX
+        MFX = itd.MFX
         FXT = itd.FXT
-        FY = itd.FY
+        MFY = itd.MFY
         FYT = itd.FYT
 
-        MX = itd.MX
         MXT = itd.MXT
-        MY = itd.MY
         MYT = itd.MYT
 
         batch_size = 1
@@ -314,7 +313,7 @@ class FeatureExtractor:
         
         print('FEATURE EXTRACTION')
         features = []
-        for i in CX:
+        for i in MCX:
             x = np.reshape(i, (itd.size,itd.size))*255
             x = cv2.merge([x,x,x])
             x = image.img_to_array(x)
@@ -323,8 +322,8 @@ class FeatureExtractor:
             features.append(feature[0].flatten())
 
             
-        self.CX = np.array(features)
-        self.CY = CY
+        self.MCX = np.array(features)
+        self.MCY = MCY
 
         features = []
         for i in CXT:
@@ -339,7 +338,7 @@ class FeatureExtractor:
         self.CYT = CYT
 
         features = []
-        for i in FX:
+        for i in MFX:
             x = np.reshape(i, (itd.size,itd.size))*255
             x = cv2.merge([x,x,x])
             x = image.img_to_array(x)
@@ -347,8 +346,8 @@ class FeatureExtractor:
             feature = model.predict(x, verbose = 0)
             features.append(feature[0].flatten())
         
-        self.FX = np.array(features)
-        self.FY = FY
+        self.MFX = np.array(features)
+        self.MFY = MFY
 
         features = []
         for i in FXT:
@@ -361,18 +360,6 @@ class FeatureExtractor:
         
         self.FXT = np.array(features)
         self.FYT = FYT
-
-        features = []
-        for i in MX:
-            x = np.reshape(i, (itd.size,itd.size))*255
-            x = cv2.merge([x,x,x])
-            x = image.img_to_array(x)
-            x = np.expand_dims(x, axis=0)
-            feature = model.predict(x, verbose = 0)
-            features.append(feature[0].flatten())
-        
-        self.MX = np.array(features)
-        self.MY = MY
 
         features = []
         for i in MXT:

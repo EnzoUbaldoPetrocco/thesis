@@ -17,7 +17,7 @@ from torch import randint
 import os, shutil
 
 
-size = 128
+size = 75
 total_n_images = 469
 
 class ImagesToData:
@@ -165,7 +165,7 @@ class ImagesToData:
     self.prepare_ds()
 
   def divide_ds_FE(self):
-    self.prop = 1/1.8
+    self.prop = 1/2
     base_path = '../../FE/' + self.dspath
     self.delete_folder_content('../../FE/')
     if self.dspath != 'mix':

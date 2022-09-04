@@ -15,7 +15,7 @@ import os
 from PIL import Image
 from torch import randint
 
-size = 128
+size = 75
 total_n_images = 470
 
 class ImagesToData:
@@ -119,9 +119,9 @@ class ImagesToData:
   def initial_routine(self, create_directory):
     file_name = "../accese vs spente.zip"
   # opening the zip file in READ mode
-    with zipfile.ZipFile(file_name, 'r') as zip:
+    '''with zipfile.ZipFile(file_name, 'r') as zip:
       zip.extractall('../')
-      print('Done!')
+      print('Done!')'''
     if create_directory:
       self.create_directories()
     random.seed(time.time_ns())

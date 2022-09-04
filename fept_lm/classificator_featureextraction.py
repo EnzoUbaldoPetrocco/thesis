@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from sklearn.svm import SVC
 from sklearn.model_selection import GridSearchCV
 from torch import logspace
-from FeatureExtractor_VGG16_v2 import FeatureExtractor
+from FeatureExtractor_EfficientNet import FeatureExtractor
 from math import floor
 from sklearn.metrics import confusion_matrix
 import tensorflow as tf
@@ -19,8 +19,8 @@ class SVCClassificator:
         self.kernel = kernel
 
     def execute(self):
-        
-        gpus = tf.config.experimental.list_physical_devices('GPU')
+        gpus = tf.config.experimental.list_physical_devices('CPU')
+        '''gpus = tf.config.experimental.list_physical_devices('GPU')
         if gpus:
         # Restrict TensorFlow to only allocate 2GB of memory on the first GPU
             try:
@@ -33,33 +33,30 @@ class SVCClassificator:
                 # Virtual devices must be set before GPUs have been initialized
                 print(e)
         else:
-            print('no gpus')
+            print('no gpus')'''
         # Confusion matrix lists
         Ccm_list = []
         Fcm_list = []
         Mcm_list = []
 
-        for i in range(50):
+        for i in range(30):
                 print('CICLE: ' + str(i))
 
                 ############################################################
                 ############### READ DATA ##################################
                 itd = FeatureExtractor(self.ds_selection)
 
-                CX = itd.CX
+                MCX = itd.MCX
                 CXT = itd.CXT
-                CY = itd.CY
+                MCY = itd.MCY
                 CYT = itd.CYT
 
-                FX = itd.FX
+                MFX = itd.MFX
                 FXT = itd.FXT
-                FY = itd.FY
+                MFY = itd.MFY
                 FYT = itd.FYT
 
-
-                MX = itd.MX
                 MXT = itd.MXT
-                MY = itd.MY
                 MYT = itd.MYT
 
 
@@ -83,11 +80,9 @@ class SVCClassificator:
                                 cv = 10,
                                 verbose = 0)
                 if self.ds_selection == "chinese":
-                    H = MS.fit(CX,CY)
+                    H = MS.fit(MCX,MCY)
                 if self.ds_selection == "french":
-                    H = MS.fit(FX,FY)
-                if self.ds_selection == "mix":
-                    H = MS.fit(MX,MY)
+                    H = MS.fit(MFX,MFY)
                 
                 print('CLASSIFICATION')
                 print('C best param')
@@ -100,11 +95,9 @@ class SVCClassificator:
                         gamma = H.best_params_['gamma'])
 
                 if self.ds_selection == "chinese":
-                    M = MS.fit(CX,CY)
+                    M = MS.fit(MCX,MCY)
                 if self.ds_selection == "french":
-                    M = MS.fit(FX,FY)
-                if self.ds_selection == "mix":
-                    M = MS.fit(MX,MY)
+                    M = MS.fit(MFX,MFY)
                 ####################################################
                 ################## TESTING #########################
 
