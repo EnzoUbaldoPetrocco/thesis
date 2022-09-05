@@ -15,10 +15,21 @@ import os
 from PIL import Image
 from torch import randint
 
-size = 75
+size = 33
 total_n_images = 470
 
 class ImagesToData:
+
+  def delete_folder_content(self, folder):
+    for filename in os.listdir(folder):
+        file_path = os.path.join(folder, filename)
+        try:
+            if os.path.isfile(file_path) or os.path.islink(file_path):
+                os.unlink(file_path)
+            elif os.path.isdir(file_path):
+                shutil.rmtree(file_path)
+        except Exception as e:
+            print('Failed to delete %s. Reason: %s' % (file_path, e))
 
   def get_dimensions(self,height, width):
     list_size = []
@@ -30,11 +41,10 @@ class ImagesToData:
 
   def manage_size(self,im):
     dimensions = im.shape
-    rate = 0.9
     im_try = im
     while dimensions[0]>size or dimensions[1]>size:
-      width = int(im.shape[1] * rate)
-      height = int(im.shape[0] * rate)
+      width = int(im.shape[1] * 0.9)
+      height = int(im.shape[0] * 0.9)
       dim = (width, height)
       try:
         im = cv2.resize(im, dim, interpolation = cv2.INTER_AREA )
@@ -45,6 +55,9 @@ class ImagesToData:
         plt.show()
       dimensions = im.shape
     return im
+
+  def created_dir(self, dir):
+    os.mkdir(dir)
 
   def create_directories(self):
     size_path = '../' + str(self.size)
@@ -75,13 +88,9 @@ class ImagesToData:
         paths.extend(pathlib.Path(path).glob(typ))
     #sorted_ima = sorted([x for x in paths])
     for i in paths:
-      try:
-        im = cv2.imread(str(i))
-        #assert not isinstance(image,type(None))
-        im = self.modify_images(im)
-        images.append(im)
-      except:
-        print('Image is None')
+      im = cv2.imread(str(i))
+      im = self.modify_images(im)
+      images.append(im)
     return images
 
   def acquire_images(self,path):
@@ -90,20 +99,15 @@ class ImagesToData:
     paths = []
     for typ in types:
         paths.extend(pathlib.Path(path).glob(typ))
-
     #sorted_ima = sorted([x for x in paths])
     for i in paths:
-      try:
-        im = cv2.imread(str(i))
-        assert not isinstance(image,type(None))
-        im = self.modify_images(im)
-        images.append(im)
-      except:
-        print('Image is None')
+      im = cv2.imread(str(i))
+      im = self.modify_images(im)
+      images.append(im)
     return images
 
   def save_images(self, list, path):
-    for i in range(total_n_images):
+    for i in range(len(list)):
       im = numpy.reshape(list[i], (self.size,self.size))
       im = Image.fromarray(numpy.uint8(im*255))
       im.save(path + '/im' + str(i) + '.jpeg')
@@ -115,6 +119,7 @@ class ImagesToData:
       list.pop(index)
       list.append(temp)
     return list
+
 
   def initial_routine(self, create_directory):
     file_name = "../accese vs spente.zip"
@@ -256,5 +261,5 @@ class ImagesToData:
     
 
 
-itd = ImagesToData(True, True)
+itd = ImagesToData(False, False)
 #itd.initial_routine()

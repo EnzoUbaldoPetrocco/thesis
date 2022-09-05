@@ -32,6 +32,8 @@ class RFCClassificator:
                 itd.bf_ml()
                 itd.little_mix()
 
+                
+
                 MCX = itd.MCX
                 CXT = itd.CXT
                 MCY = itd.MCY

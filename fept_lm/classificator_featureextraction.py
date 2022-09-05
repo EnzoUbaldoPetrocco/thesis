@@ -63,7 +63,7 @@ class SVCClassificator:
                 #####################################################################
                 ################### MODEL SELECTION (HYPERPARAMETER TUNING)##########
 
-                points = 70
+                points = 80
                 print('MODEL SELECTION AND TUNING')
                 if self.kernel == 'rbf':
                     logspaceC = np.logspace(-2,2.5,points)
@@ -227,5 +227,5 @@ class SVCClassificator:
         ###################### PLOT IMAGE ##################################
         print('PLOT IMAGE')
         plt.figure()
-        plt.imshow(np.reshape(CX[30], (itd.size,itd.size)))
+        plt.imshow(np.reshape(MCX[30], (itd.size,itd.size)))
         plt.show()

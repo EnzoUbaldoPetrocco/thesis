@@ -8,6 +8,7 @@ from torch import logspace
 import manipulating_images_better
 from math import floor
 from sklearn.metrics import confusion_matrix
+import tensorflow as tf
 
 class RFCClassificator:
 
@@ -51,12 +52,15 @@ class RFCClassificator:
 
                 rfc=RandomForestClassifier(random_state=42)
                 logspace_n_estimators = []
-                for i in np.logspace(0,3,35):
+                logspace_max_depth = []
+                for i in np.logspace(0,2,20):
+                        logspace_max_depth.append(int(i))
+                for i in np.logspace(0,3,70):
                     logspace_n_estimators.append(int(i))
                 param_grid = { 
                     'n_estimators': logspace_n_estimators,
-                    'max_features': ['auto', 'sqrt', 'log2'],
-                    'max_depth' : [1,3,5,7,9,11, 13],
+                    'max_features': [ 'sqrt', 'log2'],
+                    'max_depth' : logspace_max_depth,
                     'criterion' :['gini', 'entropy']
                     }
                 

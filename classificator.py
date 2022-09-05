@@ -50,13 +50,14 @@ class SVCClassificator:
 
                 #####################################################################
                 ################### MODEL SELECTION (HYPERPARAMETER TUNING)##########
+                points = 80
                 print('MODEL SELECTION AND TUNING')
                 if self.kernel == 'rbf':
-                    logspaceC = np.logspace(-2,2,35)
-                    logspaceGamma = np.logspace(-2,2,35)
+                    logspaceC = np.logspace(-2,2.2,points)
+                    logspaceGamma = np.logspace(-2,2.2,points)
                 if self.kernel == 'linear':
-                    logspaceC = np.logspace(-2,2,35)
-                    logspaceGamma = np.logspace(-2,2,35)
+                    logspaceC = np.logspace(-2,2,points)
+                    logspaceGamma = np.logspace(-2,2,points)
                 grid = {'C':        logspaceC,
                         'kernel':   [self.kernel],
                         'gamma':    logspaceGamma}
