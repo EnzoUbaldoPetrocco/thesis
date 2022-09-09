@@ -28,25 +28,28 @@ class SVCClassificator:
                 return 1
 
     def execute(self):
-        gpus = tf.config.experimental.list_physical_devices('CPU')
-        '''gpus = tf.config.experimental.list_physical_devices('GPU')
+        #gpus = tf.config.experimental.list_physical_devices('CPU')
+        gpus = tf.config.experimental.list_physical_devices('GPU')
         if gpus:
         # Restrict TensorFlow to only allocate 2GB of memory on the first GPU
             try:
                 tf.config.experimental.set_virtual_device_configuration(
                     gpus[0],
-                    [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=3000)])
+                    [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=2400)])
                 logical_gpus = tf.config.experimental.list_logical_devices('GPU')
                 print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
             except RuntimeError as e:
                 # Virtual devices must be set before GPUs have been initialized
                 print(e)
         else:
-            print('no gpus')'''
+            print('no gpus')
         # Confusion matrix lists
         Ccm_list = []
         Fcm_list = []
         Mcm_list = []
+        Ccm_1_list = []
+        Fcm_1_list = []
+        Mcm_1_list = []
 
         for i in range(30):
                 print('CICLE: ' + str(i))
@@ -86,6 +89,7 @@ class SVCClassificator:
                 cm_1 = confusion_matrix(CYT,CYF_1)
                 print(cm_1)
                 Ccm_list.append(cm)
+                Ccm_1_list.append(cm_1)
                 print('Predicting FRENCH TEST SET')
                 CFYF = []
                 CFYF_1 = []
@@ -105,6 +109,7 @@ class SVCClassificator:
                 cm_1 = confusion_matrix(FYT,CFYF_1)
                 print(cm_1)
                 Fcm_list.append(cm)
+                Fcm_1_list.append(cm_1)
                 print('PREDICTING MIX TEST SET')
                 MYF = []
                 MYF_1 = []
@@ -122,6 +127,7 @@ class SVCClassificator:
                 print(cm)
                 Mcm_list.append(cm)
                 cm_1 = confusion_matrix(MYT,MYF_1)
+                Mcm_1_list.append(cm_1)
                 print(cm_1)
 
 
@@ -204,30 +210,48 @@ class SVCClassificator:
 
         Ctot = return_tot_elements(Ccm_list[0])
         Ccm_list = calculate_percentage_confusion_matrix(Ccm_list, Ctot)
-
+        Ccm_1_list = calculate_percentage_confusion_matrix(Ccm_1_list, Ctot)
 
         Ftot = return_tot_elements(Fcm_list[0])
         Fcm_list = calculate_percentage_confusion_matrix(Fcm_list, Ftot)
+        Fcm_1_list = calculate_percentage_confusion_matrix(Fcm_1_list, Ftot)
 
         Mtot = return_tot_elements(Mcm_list[0])
         Mcm_list = calculate_percentage_confusion_matrix(Mcm_list, Mtot)
+        Mcm_1_list = calculate_percentage_confusion_matrix(Mcm_1_list, Mtot)
 
         statistic_C = return_statistics_pcm(Ccm_list)
         statistic_F = return_statistics_pcm(Fcm_list)
         statistic_M = return_statistics_pcm(Mcm_list)
+        statistic_C_1 = return_statistics_pcm(Ccm_1_list)
+        statistic_F_1 = return_statistics_pcm(Fcm_1_list)
+        statistic_M_1 = return_statistics_pcm(Mcm_1_list)
 
         print('CHINESE')
+        print('Exit 0')
         for i in statistic_C:
+                print(i)
+        print('Exit 1')
+        for i in statistic_C_1:
                 print(i)
         #print(statistic_C)
         print('FRENCH')
+        print('Exit 0')
         for i in statistic_F:
                 print(i)
-        #print(statistic_F)
+        print('Exit 1')
+        for i in statistic_F_1:
+                print(i)
+        #print(statistic_C)
         print('MIX')
+        print('Exit 0')
         for i in statistic_M:
                 print(i)
-        #print(statistic_M)
+        print('Exit 1')
+        for i in statistic_M_1:
+                print(i)
+        #print(statistic_C)
+        
 
 
         ####################################################################

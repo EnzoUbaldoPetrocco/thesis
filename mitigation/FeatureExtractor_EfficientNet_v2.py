@@ -37,7 +37,7 @@ import os
 working_directory = 'MITIGATION'
 model_loss = 0
 BATCH_SIZE = 1
-lamb = 0.5
+lamb = .0
 
 
 def unfreeze_model(model, layers_n):
@@ -79,9 +79,9 @@ def custom_loss_w1(y_true,y_pred):
     dist2 = [dist2,dist2]
     dist2 = tf.convert_to_tensor(dist2)
     loss = tf.keras.losses.binary_crossentropy(y_true, y_pred)
-    print(dist2)
-    print(loss)
-    return tf.reduce_mean([dist2,loss])
+    
+    return dist2 + loss
+
 
 
 class FeatureExtractor:
@@ -137,24 +137,27 @@ class FeatureExtractor:
         x = Flatten()(x)
         x = Dropout(0.15)(x)
         x = Dense(20, activation='relu', name='feature_extractor')(x)
-        
-        x = Dense(2, activation='sigmoid', name='dense')(x)
+        chin = Flatten()(x)
+        chin = Dense(1, activation='sigmoid', name='dense')(chin)
+        fren = Flatten()(x)
+        fren = Dense(1, activation='sigmoid', name='dense_1')(fren)
         #chin.summary()
         #fren.summary()
         #inputs = Input(shape=(itd.size, itd.size, 3))
         model = Model(inputs=input,
-                     outputs = [x],
+                     outputs = [chin,fren],
                      name= 'model')
-        
+        #model.summary()
         model.trainable = True
         for layer in model.layers[1].layers:
             layer.trainable = False
+        #model.summary()
         # We unfreeze the top 20 layers while leaving BatchNorm layers frozen
         for layer in model.layers[1].layers[-4:]:
             if not isinstance(layer, layers.BatchNormalization):
                 layer.trainable = True
 
-        model.summary()
+        #model.summary()
         model_loss = model
 
         ####################################################################################
@@ -168,6 +171,10 @@ class FeatureExtractor:
         lr_reduce = ReduceLROnPlateau(monitor='val_dense_accuracy', factor=0.2, patience=3, verbose=1, mode='max', min_lr=1e-8)
         #checkpoint = ModelCheckpoint('vgg16_finetune.h15', monitor= 'val_accuracy', mode= 'max', save_best_only = True, verbose= 0)
         early = EarlyStopping(monitor='val_dense_accuracy', min_delta=0.001, patience=13, verbose=1, mode='auto')
+
+        lr_reduce_1 = ReduceLROnPlateau(monitor='val_dense_1_accuracy', factor=0.2, patience=3, verbose=1, mode='max', min_lr=1e-8)
+        #checkpoint = ModelCheckpoint('vgg16_finetune.h15', monitor= 'val_accuracy', mode= 'max', save_best_only = True, verbose= 0)
+        early_1 = EarlyStopping(monitor='val_dense_1_accuracy', min_delta=0.001, patience=13, verbose=1, mode='auto')
         
         learning_rate= 4e-3
         learning_rate_fine = 1e-8
@@ -191,22 +198,22 @@ class FeatureExtractor:
             target_size = (itd.size, itd.size),
             batch_size = batch_size,
             color_mode = 'rgb',
-            class_mode = 'categorical',
-            classes = ['chinese', 'french', 'accese', 'spente'],
+            class_mode = 'binary',
+            #classes = ['chinese', 'french', 'accese', 'spente'],
             subset = 'training',
             follow_links=True)
 
             chinese_val = chinvaldatagen.flow_from_directory('../../'+ working_directory,
             target_size = (itd.size, itd.size),
             batch_size = batch_size,
-            class_mode = 'categorical',
-            classes = ['chinese', 'french', 'accese', 'spente'],
+            class_mode = 'binary',
+            #classes = ['chinese', 'french', 'accese', 'spente'],
             color_mode = 'rgb',
             subset = 'validation',
             follow_links=True)
 
             '''for i in chinese:
-                print(i[1])
+                print(i)
                 plt.figure()
                 plt.imshow(i[0][0]*1/255)
                 plt.show()'''
@@ -216,7 +223,7 @@ class FeatureExtractor:
 
             history = model.fit(chinese,
             epochs=ep, validation_data=chinese_val, 
-            callbacks=[early, lr_reduce],verbose=verbose_param)
+            callbacks=[early, lr_reduce, early_1, lr_reduce_1],verbose=verbose_param)
             
         if self.ds_selection == "french":
             print('french')

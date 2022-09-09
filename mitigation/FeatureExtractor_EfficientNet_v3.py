@@ -1,5 +1,6 @@
 #! /usr/bin/env python3
-import re
+
+from pickletools import uint8
 import manipulating_images_better
 import numpy as np
 from tensorflow.keras.applications.resnet50 import ResNet50
@@ -39,7 +40,7 @@ import pandas as pd
 working_directory = 'MITIGATION'
 model_loss = 0
 BATCH_SIZE = 1
-lamb = .0
+lamb = .5
 
 
 def unfreeze_model(model, layers_n):
@@ -69,76 +70,32 @@ def batch_generator(X, Y, batch_size = BATCH_SIZE):
                 if len(batch)==batch_size:
                     yield X[batch], Y[batch]
                     batch=[]
-def my_numpy_func(y_true, y_pred, out):
-    y_true_0, y_true_1 = y_true[0]
-    w1 = K.get_value(model_loss.layers[len(model_loss.layers)-1].kernel)
-    w2 = K.get_value(model_loss.layers[len(model_loss.layers)-2].kernel)
 
-    weights1 = np.array([i[0] for i in w1])
-    weights2 = np.array([i[0] for i in w2])
-    dist = np.linalg.norm(weights1-weights2)
-    #dist = tf.norm(w1 - w2, axis=1)
-    dist2 = lamb*dist*dist
-    loss = tf.keras.losses.binary_crossentropy(y_true_1, y_pred[0])
-    loss = K.get_value(loss)
-    y_true_0 = K.get_value(y_true_0)
-
-    if y_true_0 == out:
-        print('if')
-        #res = tf.convert_to_tensor([dist2 + loss], dtype=tf.float32)
-        res = dist2 + loss
-        #tf.cast(res, dtype=tf.float32)
-        print(res)
-        print('if')
-        return np.array(res)
-    else:
-        print('else')
-        res = 0.0
-        #tf.cast(res, dtype=tf.float32)
-        print(res)
-        print('else')
-        return  np.array(res)
-    #return [y_true_0 , dist2 + loss]   
-    
-#@tf.function
 def custom_loss_w1(y_true,y_pred):
-    # Calculate lambda * ||Wc - Wf||^2
     w1 = K.get_value(model_loss.layers[len(model_loss.layers)-1].kernel)
     w2 = K.get_value(model_loss.layers[len(model_loss.layers)-2].kernel)
-    weights1 = np.array([i[0] for i in w1])
-    weights2 = np.array([i[0] for i in w2])
-    dist = np.linalg.norm(weights1-weights2)
-    dist2 = lamb*dist*dist
-    # Loss
-    loss = tf.keras.losses.binary_crossentropy(y_true[0][1], y_pred[0])
-    loss = tf.cast(loss, dtype=tf.float32)
-    dist2 = tf.constant(dist2, dtype=tf.float32)
-    mask = K.greater( y_true[0][0], 0)
-    res = tf.math.add(loss , dist2)
-    if mask:
-        return res
-    else:
-        return 0.0
 
-#@tf.function
-def custom_loss_w2(y_true,y_pred):
-    # Calculate lambda * ||Wc - Wf||^2
-    w1 = K.get_value(model_loss.layers[len(model_loss.layers)-1].kernel)
-    w2 = K.get_value(model_loss.layers[len(model_loss.layers)-2].kernel)
     weights1 = np.array([i[0] for i in w1])
     weights2 = np.array([i[0] for i in w2])
+    
     dist = np.linalg.norm(weights1-weights2)
-    dist2 = lamb*dist*dist
-    dist2 = tf.constant(dist2, dtype=tf.float32)
-    # Loss
-    loss = tf.keras.losses.binary_crossentropy(y_true[0][1], y_pred[0])
-    loss = tf.cast(loss, dtype=tf.float32)
-    mask = K.less( y_true[0][0], 1)
-    res = tf.math.add(loss , dist2)
-    if mask:
-        return res
-    else:
-        return 0.0
+    dist2 = lamb*tf.convert_to_tensor(dist*dist)
+   
+    loss = tf.keras.losses.binary_crossentropy(y_true[0], y_pred[0])
+    return  dist2 + loss
+
+def custom_loss_w2(y_true,y_pred):
+    w1 = K.get_value(model_loss.layers[len(model_loss.layers)-1].kernel)
+    w2 = K.get_value(model_loss.layers[len(model_loss.layers)-2].kernel)
+
+    weights1 = np.array([i[0] for i in w1])
+    weights2 = np.array([i[0] for i in w2])
+    
+    dist = np.linalg.norm(weights1-weights2)
+    dist2 = lamb* tf.convert_to_tensor(dist*dist)
+
+    loss = tf.keras.losses.binary_crossentropy(y_true[0], y_pred[0])
+    return dist2 + loss
 
 def dummy_loss(y_true, y_pred):
     return 0.0
@@ -257,7 +214,7 @@ class FeatureExtractor:
         #dataset = tf.data.Dataset.from_tensors((list(ds['images'].values), ds['labels'].values))
         ds = shuffle(ds)
         return ds
-        
+              
     def __init__(self, ds_selection = ""):
         global model_loss
         device = torch.device('cpu')
@@ -340,7 +297,7 @@ class FeatureExtractor:
         
         ep = 100
         eps_fine = 10
-        verbose_param = 0
+        verbose_param = 1
         
         lr_reduce = ReduceLROnPlateau(monitor='val_dense_accuracy', factor=0.2, patience=3, verbose=1, mode='max', min_lr=1e-8)
         #checkpoint = ModelCheckpoint('vgg16_finetune.h15', monitor= 'val_accuracy', mode= 'max', save_best_only = True, verbose= 0)
@@ -372,9 +329,14 @@ class FeatureExtractor:
             #ds.shuffle(buffer_size=3)
             train_size = int(0.9*ds.shape[0])
             val_size = int(0.1*ds.shape[0])
+            '''dataset = ds.take(train_size)
+            dataset_val = ds.skip(train_size)'''
             dataset = ds.head(train_size)
             dataset_val = ds.tail(val_size)
-            model.compile(loss=[custom_loss_w1, custom_loss_w2], optimizer=optimizer, metrics=["accuracy"])#, run_eagerly=True)
+            '''for row in dataset.iterrows():
+                print('row 0:',row[0])
+                print('row 1:',row[1][0],row[1][1],row[1][2])'''
+            model.compile(loss=custom_loss_w1, optimizer=optimizer, metrics=["accuracy"])
             dataset = dataset.to_numpy()
             dataset_val = dataset_val.to_numpy()
             X = []
@@ -388,50 +350,35 @@ class FeatureExtractor:
 
             for i in dataset_val:
                 X_val.append(i[0])
+                print('X_VAL(i):',i[0] )
                 y_temp = [i[1], i[2]]
+                print('y_VAL(i):',y_temp )
                 y_val.append(y_temp)
-            X = tf.stack(X)
-            y = tf.stack(y)
-            X_val = tf.stack(X_val)
-            y_val = tf.stack(y_val)
-
+            print(np.shape(X[0]))
+            print(np.shape(y[0]))
             history = model.fit(X , y,
             epochs=ep, validation_data=(X_val, y_val), 
-            callbacks=[early, lr_reduce],verbose=verbose_param, batch_size=batch_size)
+            callbacks=[early, lr_reduce],verbose=verbose_param)
             
         if self.ds_selection == "french":
             print('french')
-            print('chinese')
             ds = self.dataset_management()
+            
             #ds.shuffle(buffer_size=3)
-            train_size = int(0.9*ds.shape[0])
-            val_size = int(0.1*ds.shape[0])
+            train_size = int(0.9*len(list(ds)))
+            val_size = int(0.1*len(list(ds)))
+            '''dataset = ds.take(train_size)
+            dataset_val = ds.skip(train_size)'''
             dataset = ds.head(train_size)
             dataset_val = ds.tail(val_size)
-            model.compile(loss=[custom_loss_w1, custom_loss_w2], optimizer=optimizer, metrics=["accuracy"])#, run_eagerly=True)
-            dataset = dataset.to_numpy()
-            dataset_val = dataset_val.to_numpy()
-            X = []
-            y = []
-            X_val = []
-            y_val = []
-            for i in dataset:
-                X.append(i[0])
-                y_temp = [i[1], i[2]]
-                y.append(y_temp)
+            for row in dataset.iterrows():
+                print('row 0:',row[0])
+                print('row 1:',row[1])
+            model.compile(loss=[custom_loss_w1, custom_loss_w2], optimizer=optimizer, metrics=["accuracy"])
 
-            for i in dataset_val:
-                X_val.append(i[0])
-                y_temp = [i[1], i[2]]
-                y_val.append(y_temp)
-            X = tf.stack(X)
-            y = tf.stack(y)
-            X_val = tf.stack(X_val)
-            y_val = tf.stack(y_val)
-
-            history = model.fit(X , y,
-            epochs=ep, validation_data=(X_val, y_val), 
-            callbacks=[early, lr_reduce],verbose=verbose_param, batch_size=batch_size)
+            history = model.fit(dataset,
+            epochs=ep, validation_data=dataset_val, 
+            callbacks=[early, lr_reduce],verbose=verbose_param)
         
         self.M = model
             

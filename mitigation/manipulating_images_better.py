@@ -183,6 +183,13 @@ class ImagesToData:
     self.created_dir(base_path + '/french/'+ 'spente')
     self.created_dir(base_path + '/french/'+ 'accese')
 
+    '''self.created_dir(base_path + '/spente')
+    self.created_dir(base_path + '/accese')
+    self.created_dir(base_path + '/spente/' + 'chinese')
+    self.created_dir(base_path + '/spente/' + 'french')
+    self.created_dir(base_path + '/accese/'+ 'chinese')
+    self.created_dir(base_path + '/accese/'+ 'french')'''
+
     if self.dspath == 'chinese':
       chinese_off = self.chinese_off[0:int(len(self.chinese_off)*self.prop*0.9)]
       chinese_on = self.chinese_on[0:int(len(self.chinese_on)*self.prop*0.9)]
@@ -199,6 +206,11 @@ class ImagesToData:
     self.save_images(chinese_on, base_path  + '/chinese/'+ 'accese')
     self.save_images(french_off, base_path + '/french/' + 'spente')
     self.save_images(french_on, base_path  + '/french/'+ 'accese')
+
+    '''self.save_images(chinese_off, base_path  + '/spente/'+ 'chinese')
+    self.save_images(chinese_on, base_path  + '/accese/'+ 'chinese')
+    self.save_images(french_off, base_path + '/spente/' + 'french')
+    self.save_images(french_on, base_path  + '/accese/'+ 'french')'''
     
     self.chinese_on = self.chinese_on[int(len(self.chinese_on)*self.prop):len(self.chinese_on)-1]
     self.chinese_off = self.chinese_off[int(len(self.chinese_off)*self.prop):len(self.chinese_off)-1]

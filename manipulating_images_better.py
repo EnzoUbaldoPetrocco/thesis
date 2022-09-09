@@ -15,7 +15,7 @@ import os, shutil
 from PIL import Image
 from torch import randint
 
-size = 33
+size = 75
 total_n_images = 470
 
 class ImagesToData:
