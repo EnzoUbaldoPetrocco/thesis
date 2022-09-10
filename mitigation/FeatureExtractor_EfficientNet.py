@@ -39,7 +39,7 @@ import pandas as pd
 working_directory = 'MITIGATION'
 model_loss = 0
 BATCH_SIZE = 1
-lamb = .0
+lamb = 0.01
 
 
 def unfreeze_model(model, layers_n):
