@@ -167,7 +167,7 @@ class ImagesToData:
     self.prepare_ds()
 
   def divide_ds_FE(self):
-    self.prop = 7/13
+    self.prop = 7/10
     base_path = '../../' + working_directory +'/'
     #self.delete_folder_content('../../' + working_directory + '/')
     

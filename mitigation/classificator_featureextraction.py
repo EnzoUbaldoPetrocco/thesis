@@ -14,7 +14,8 @@ import torch
 from tensorflow.keras.models import Model
 import cv2
 from tensorflow.keras.preprocessing import image
-
+import os
+#os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 class SVCClassificator:
 
     def __init__(self, ds_selection = "", kernel= ""):
@@ -35,7 +36,7 @@ class SVCClassificator:
             try:
                 tf.config.experimental.set_virtual_device_configuration(
                     gpus[0],
-                    [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=1500)])
+                    [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=2600)])
                 logical_gpus = tf.config.experimental.list_logical_devices('GPU')
                 print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
             except RuntimeError as e:

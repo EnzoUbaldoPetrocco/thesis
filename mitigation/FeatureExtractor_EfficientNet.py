@@ -33,14 +33,21 @@ from sklearn.utils import shuffle
 config.gpu_options.allow_growth = True
 session = tf.compat.v1.Session(config=config)'''
 import torch
-import os
+
 import pandas as pd
 
 working_directory = 'MITIGATION'
 model_loss = 0
 BATCH_SIZE = 1
-lamb = 0.01
-
+lambda_grid = [1.00000000e-02, 1.46779927e-02, 2.15443469e-02,  3.16227766e-02,
+ 4.64158883e-02, 6.81292069e-02, 1.00000000e-01, 1.46779927e-01,
+ 2.15443469e-01, 3.16227766e-01, 4.64158883e-01, 6.81292069e-01,
+ 1.00000000e+00, 1.46779927e+00, 2.15443469e+00, 3.16227766e+00,
+ 4.64158883e+00, 6.81292069e+00, 1.00000000e+01, 1.46779927e+01,
+ 2.15443469e+01, 3.16227766e+01, 4.64158883e+01, 6.81292069e+01,
+ 1.00000000e+02]
+lamb = 1.0
+# out2 dist2 + loss
 
 def unfreeze_model(model, layers_n):
     # We unfreeze the top 20 layers while leaving BatchNorm layers frozen
@@ -340,7 +347,7 @@ class FeatureExtractor:
         
         ep = 100
         eps_fine = 10
-        verbose_param = 0
+        verbose_param = 1
         
         lr_reduce = ReduceLROnPlateau(monitor='val_dense_accuracy', factor=0.2, patience=3, verbose=1, mode='max', min_lr=1e-8)
         #checkpoint = ModelCheckpoint('vgg16_finetune.h15', monitor= 'val_accuracy', mode= 'max', save_best_only = True, verbose= 0)
@@ -401,7 +408,6 @@ class FeatureExtractor:
             
         if self.ds_selection == "french":
             print('french')
-            print('chinese')
             ds = self.dataset_management()
             #ds.shuffle(buffer_size=3)
             train_size = int(0.9*ds.shape[0])
@@ -431,7 +437,7 @@ class FeatureExtractor:
 
             history = model.fit(X , y,
             epochs=ep, validation_data=(X_val, y_val), 
-            callbacks=[early, lr_reduce],verbose=verbose_param, batch_size=batch_size)
+            callbacks=[early_1, lr_reduce_1],verbose=verbose_param, batch_size=batch_size)
         
         self.M = model
             
