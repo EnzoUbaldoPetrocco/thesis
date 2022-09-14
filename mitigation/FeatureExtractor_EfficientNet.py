@@ -46,7 +46,7 @@ lambda_grid = [1.00000000e-02, 1.46779927e-02, 2.15443469e-02,  3.16227766e-02,
  4.64158883e+00, 6.81292069e+00, 1.00000000e+01, 1.46779927e+01,
  2.15443469e+01, 3.16227766e+01, 4.64158883e+01, 6.81292069e+01,
  1.00000000e+02]
-lamb = 1.0
+lamb = lambda_grid[0]
 # out2 dist2 + loss
 
 def unfreeze_model(model, layers_n):
@@ -122,6 +122,7 @@ def custom_loss_w1(y_true,y_pred):
     dist2 = tf.constant(dist2, dtype=tf.float32)
     mask = K.greater( y_true[0][0], 0)
     res = tf.math.add(loss , dist2)
+    
     if mask:
         return res
     else:
@@ -347,7 +348,7 @@ class FeatureExtractor:
         
         ep = 100
         eps_fine = 10
-        verbose_param = 1
+        verbose_param = 0
         
         lr_reduce = ReduceLROnPlateau(monitor='val_dense_accuracy', factor=0.2, patience=3, verbose=1, mode='max', min_lr=1e-8)
         #checkpoint = ModelCheckpoint('vgg16_finetune.h15', monitor= 'val_accuracy', mode= 'max', save_best_only = True, verbose= 0)
