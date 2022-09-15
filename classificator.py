@@ -50,7 +50,7 @@ class SVCClassificator:
 
                 #####################################################################
                 ################### MODEL SELECTION (HYPERPARAMETER TUNING)##########
-                points = 80
+                points = 50
                 print('MODEL SELECTION AND TUNING')
                 if self.kernel == 'rbf':
                     logspaceC = np.logspace(-2,2.2,points)

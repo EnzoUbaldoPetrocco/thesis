@@ -15,7 +15,7 @@ import os, shutil
 from PIL import Image
 from torch import randint
 
-size = 75
+size = 33
 total_n_images = 470
 
 class ImagesToData:
@@ -190,21 +190,22 @@ class ImagesToData:
     self.french = list(self.french)
     self.chinese_categories = list(self.chinese_categories)
     self.french_categories = list(self.french_categories)
+    
 
-    self.CX = self.chinese[0 : 252]
-    self.CY = self.chinese_categories[0 : 252]
-    self.CXT  = self.chinese[253 : 360]
-    self.CYT = self.chinese_categories[253 : 360]
-    self.MXT = self.chinese[361 : 469]
-    self.MYT = self.chinese_categories[361 : 469]
+    self.CX = self.chinese[0 : 2*252]
+    self.CY = self.chinese_categories[0 : 2*252]
+    self.CXT  = self.chinese[2*253-1 : 2*360]
+    self.CYT = self.chinese_categories[2*253-1 : 2*360]
+    self.MXT = self.chinese[2*361-1 : 2*469]
+    self.MYT = self.chinese_categories[2*361-1 : 2*469]
 
 
-    self.FX = self.french[0 : 252]
-    self.FY = self.french_categories[0 : 252]
-    self.FXT  = self.french[253 : 360]
-    self.FYT = self.french_categories[253 : 360]
-    self.MXT = numpy.concatenate((self.MXT, self.french[361 : 469]), axis = 0)
-    self.MYT = numpy.concatenate((self.MYT, self.french_categories[361 : 469]), axis = 0)
+    self.FX = self.french[0 : 2*252]
+    self.FY = self.french_categories[0 : 2*252]
+    self.FXT  = self.french[2*253-1 : 2*360]
+    self.FYT = self.french_categories[2*253-1 : 2*360]
+    self.MXT = numpy.concatenate((self.MXT, self.french[2*361-1 : 2*469]), axis = 0)
+    self.MYT = numpy.concatenate((self.MYT, self.french_categories[2*361-1 : 2*469]), axis = 0)
     self.MX = numpy.concatenate((self.CX, self.FX), axis=0)
     self.MY = numpy.concatenate((self.CY, self.FY), axis=0)
 

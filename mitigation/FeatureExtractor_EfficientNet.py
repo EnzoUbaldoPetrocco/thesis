@@ -46,7 +46,7 @@ lambda_grid = [1.00000000e-02, 1.46779927e-02, 2.15443469e-02,  3.16227766e-02,
  4.64158883e+00, 6.81292069e+00, 1.00000000e+01, 1.46779927e+01,
  2.15443469e+01, 3.16227766e+01, 4.64158883e+01, 6.81292069e+01,
  1.00000000e+02]
-lamb = lambda_grid[0]
+lamb = lambda_grid[5]
 # out2 dist2 + loss
 
 def unfreeze_model(model, layers_n):
@@ -76,7 +76,9 @@ def batch_generator(X, Y, batch_size = BATCH_SIZE):
                 if len(batch)==batch_size:
                     yield X[batch], Y[batch]
                     batch=[]
+
 def my_numpy_func(y_true, y_pred, out):
+
     y_true_0, y_true_1 = y_true[0]
     w1 = K.get_value(model_loss.layers[len(model_loss.layers)-1].kernel)
     w2 = K.get_value(model_loss.layers[len(model_loss.layers)-2].kernel)
