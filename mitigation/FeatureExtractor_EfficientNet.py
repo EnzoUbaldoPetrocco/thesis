@@ -46,7 +46,7 @@ lambda_grid = [1.00000000e-02, 1.46779927e-02, 2.15443469e-02,  3.16227766e-02,
  4.64158883e+00, 6.81292069e+00, 1.00000000e+01, 1.46779927e+01,
  2.15443469e+01, 3.16227766e+01, 4.64158883e+01, 6.81292069e+01,
  1.00000000e+02]
-lamb = lambda_grid[5]
+lamb = 1.5 #lambda_grid[6] 
 # out2 dist2 + loss
 
 def unfreeze_model(model, layers_n):
@@ -349,8 +349,7 @@ class FeatureExtractor:
         print('RETRAINING')
         
         ep = 100
-        eps_fine = 10
-        verbose_param = 0
+        verbose_param = 1
         
         lr_reduce = ReduceLROnPlateau(monitor='val_dense_accuracy', factor=0.2, patience=3, verbose=1, mode='max', min_lr=1e-8)
         #checkpoint = ModelCheckpoint('vgg16_finetune.h15', monitor= 'val_accuracy', mode= 'max', save_best_only = True, verbose= 0)
@@ -384,7 +383,7 @@ class FeatureExtractor:
             val_size = int(0.1*ds.shape[0])
             dataset = ds.head(train_size)
             dataset_val = ds.tail(val_size)
-            model.compile(loss=[custom_loss_w1, custom_loss_w2], optimizer=optimizer, metrics=["accuracy"])#, run_eagerly=True)
+            model.compile(loss=[custom_loss_w1, custom_loss_w2], optimizer=optimizer, metrics=["accuracy"],  loss_weights=[0.1,0.9])#, run_eagerly=True)
             dataset = dataset.to_numpy()
             dataset_val = dataset_val.to_numpy()
             X = []
@@ -402,6 +401,7 @@ class FeatureExtractor:
                 y_val.append(y_temp)
             X = tf.stack(X)
             y = tf.stack(y)
+            print(y)
             X_val = tf.stack(X_val)
             y_val = tf.stack(y_val)
 
