@@ -242,10 +242,9 @@ class ImagesToData:
 
   def prepare_ds(self):
     ### Divisions
-    first = int(270*(1-self.prop))
-    second = int((270 + 110)*(1-self.prop))
-    fin = int(total_n_images*(1-self.prop))
-    
+    first = int((1-self.prop)*7/13*len(self.chinese))
+    second = int((1-self.prop)*10/13*len(self.chinese))
+    fin = int((1-self.prop)*len(self.chinese))
 
     self.chinese = list(self.chinese)
     self.french = list(self.french)
