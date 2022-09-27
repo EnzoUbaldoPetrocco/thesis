@@ -54,7 +54,7 @@ class SVCClassificator:
 
         for i in range(30):
                 print('CICLE: ' + str(i))
-                '''gpus = tf.config.experimental.list_physical_devices('CPU')
+                gpus = tf.config.experimental.list_physical_devices('CPU')
                 gpus = tf.config.experimental.list_physical_devices('GPU')
                 if gpus:
                         # Restrict TensorFlow to only allocate 2GB of memory on the first GPU
@@ -68,7 +68,7 @@ class SVCClassificator:
                                 # Virtual devices must be set before GPUs have been initialized
                                 print(e)
                 else:
-                        print('no gpus')'''
+                        print('no gpus')
 
                 ############################################################
                 ############### READ DATA ##################################
@@ -274,5 +274,5 @@ class SVCClassificator:
         ###################### PLOT IMAGE ##################################
         print('PLOT IMAGE')
         plt.figure()
-        plt.imshow(np.reshape(MCX[30], (itd.size,itd.size)))
+        plt.imshow(np.reshape(itd.CXT[10], (itd.size,itd.size)))
         plt.show()

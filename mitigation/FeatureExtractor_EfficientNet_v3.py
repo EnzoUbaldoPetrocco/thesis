@@ -1,7 +1,6 @@
 #! /usr/bin/env python3
-
-from pickletools import uint8
-import manipulating_images_better
+import re
+import manipulating_images_better_v2
 import numpy as np
 from tensorflow.keras.applications.resnet50 import ResNet50
 from tensorflow.keras.applications.vgg16 import VGG16
@@ -34,14 +33,21 @@ from sklearn.utils import shuffle
 config.gpu_options.allow_growth = True
 session = tf.compat.v1.Session(config=config)'''
 import torch
-import os
+
 import pandas as pd
 
 working_directory = 'MITIGATION'
-model_loss = 0
+model = 0
 BATCH_SIZE = 1
-lamb = .5
-
+lambda_grid = [1.00000000e-02, 1.46779927e-02, 2.15443469e-02,  3.16227766e-02,
+ 4.64158883e-02, 6.81292069e-02, 1.00000000e-01, 1.46779927e-01,
+ 2.15443469e-01, 3.16227766e-01, 4.64158883e-01, 6.81292069e-01,
+ 1.00000000e+00, 1.46779927e+00, 2.15443469e+00, 3.16227766e+00,
+ 4.64158883e+00, 6.81292069e+00, 1.00000000e+01, 1.46779927e+01,
+ 2.15443469e+01, 3.16227766e+01, 4.64158883e+01, 6.81292069e+01,
+ 1.00000000e+02]
+lamb = 0 #lambda_grid[2]
+# out2 dist2 + loss
 
 def unfreeze_model(model, layers_n):
     # We unfreeze the top 20 layers while leaving BatchNorm layers frozen
@@ -70,32 +76,10 @@ def batch_generator(X, Y, batch_size = BATCH_SIZE):
                 if len(batch)==batch_size:
                     yield X[batch], Y[batch]
                     batch=[]
-
-def custom_loss_w1(y_true,y_pred):
-    w1 = K.get_value(model_loss.layers[len(model_loss.layers)-1].kernel)
-    w2 = K.get_value(model_loss.layers[len(model_loss.layers)-2].kernel)
-
-    weights1 = np.array([i[0] for i in w1])
-    weights2 = np.array([i[0] for i in w2])
-    
-    dist = np.linalg.norm(weights1-weights2)
-    dist2 = lamb*tf.convert_to_tensor(dist*dist)
    
-    loss = tf.keras.losses.binary_crossentropy(y_true[0], y_pred[0])
-    return  dist2 + loss
-
-def custom_loss_w2(y_true,y_pred):
-    w1 = K.get_value(model_loss.layers[len(model_loss.layers)-1].kernel)
-    w2 = K.get_value(model_loss.layers[len(model_loss.layers)-2].kernel)
-
-    weights1 = np.array([i[0] for i in w1])
-    weights2 = np.array([i[0] for i in w2])
     
-    dist = np.linalg.norm(weights1-weights2)
-    dist2 = lamb* tf.convert_to_tensor(dist*dist)
+#@tf.function
 
-    loss = tf.keras.losses.binary_crossentropy(y_true[0], y_pred[0])
-    return dist2 + loss
 
 def dummy_loss(y_true, y_pred):
     return 0.0
@@ -103,124 +87,54 @@ def dummy_loss(y_true, y_pred):
 
 class FeatureExtractor:
 
-    def chinese_dataset(self):
+    def custom_loss_w1(self,y_true,y_pred):
+        # Calculate lambda * ||Wc - Wf||^2
+        w1 = K.get_value(self.model.layers[len(self.model.layers)-1].kernel)
+        w2 = K.get_value(self.model.layers[len(self.model.layers)-2].kernel)
+        weights1 = np.array([i[0] for i in w1])
+        weights2 = np.array([i[0] for i in w2])
+        dist = np.linalg.norm(weights1-weights2)
+        dist2 = lamb*dist*dist
+        # Loss
+        loss = tf.keras.losses.binary_crossentropy(y_true[0], y_pred[0])
+        loss = tf.cast(loss, dtype=tf.float32)
+        dist2 = tf.constant(dist2, dtype=tf.float32)
+        mask = K.greater(y_true[0][0], 0)
+        res = tf.math.add(loss , dist2)
+        #return res
+        if mask:
+            return res
+        else:
+            return 0.0
 
-        chin_labels = []
-        chin_img = []
+    #@tf.function
+    def custom_loss_w2(self, y_true,y_pred):
+        # Calculate lambda * ||Wc - Wf||^2
+        w1 = K.get_value(self.model.layers[len(self.model.layers)-1].kernel)
+        w2 = K.get_value(self.model.layers[len(self.model.layers)-2].kernel)
+        weights1 = np.array([i[0] for i in w1])
+        weights2 = np.array([i[0] for i in w2])
+        dist = np.linalg.norm(weights1-weights2)
+        dist2 = lamb*dist*dist
+        dist2 = tf.constant(dist2, dtype=tf.float32)
+        # Loss
+        loss = tf.keras.losses.binary_crossentropy(y_true[0], y_pred[0])
+        loss = tf.cast(loss, dtype=tf.float32)
+        mask = K.greater( y_true[0][0], 0)
+        res = tf.math.add(loss , dist2)
+        mask = tf.math.logical_not(mask)
+        #return res
+        if mask:
+            return res
+        else:
+            return 0.0
 
-        
-
-        chinese = self.chindatagen.flow_from_directory('../../' + working_directory + '/chinese',
-        target_size = (self.size, self.size),
-        batch_size = self.batch_size,
-        color_mode = 'rgb',
-        class_mode = 'binary',
-        #classes = ['chinese', 'french', 'accese', 'spente'],
-        subset = 'training',
-        follow_links=True)
-
-        chinese_val = self.chinvaldatagen.flow_from_directory('../../'+ working_directory + '/chinese',
-        target_size = (self.size, self.size),
-        batch_size = self.batch_size,
-        class_mode = 'binary',
-        #classes = ['chinese', 'french', 'accese', 'spente'],
-        color_mode = 'rgb',
-        subset = 'validation',
-        follow_links=True)
-
-        for i in chinese:
-            clabel = tf.constant([0.0])
-            chin_labels.append(tf.stack([clabel,i[1]]))
-            chin_img.append(i[0])
-
-        chin = tf.data.Dataset.from_tensor_slices((chin_img, chin_labels))
-
-    def french_dataset(self):
-        fren_labels = []
-        fren_img = []
-
-        
-        french = self.frendatagen.flow_from_directory('../../' + working_directory + '/french',
-        target_size = (self.size, self.size),
-        batch_size = self.batch_size,
-        color_mode = 'rgb',
-        class_mode = 'binary',
-        #classes = ['chinese', 'french', 'accese', 'spente'],
-        subset = 'training',
-        follow_links=True)
-
-        french_val = self.frenvaldatagen.flow_from_directory('../../'+ working_directory + '/french',
-        target_size = (self.size, self.size),
-        batch_size = self.batch_size,
-        class_mode = 'binary',
-        #classes = ['chinese', 'french', 'accese', 'spente'],
-        color_mode = 'rgb',
-        subset = 'validation',
-        follow_links=True)
-
-        
-        for i in french:
-            clabel = tf.constant([1.0])
-            fren_labels.append(tf.stack([clabel,i[1]]))
-            fren_img.append(i[0])
-
-        fren = tf.data.Dataset.from_tensor_slices((fren_img, fren_labels))
-
-    def create_dataframe(self, rootDir, e, on):
-        df = []
-        '''for dirName, subdirList, fileList in os.walk(rootDir):
-            for fname in fileList:
-                df = pd.read_csv(fname)'''
-        paths = [path.parts[-3:] for path in Path(rootDir).rglob('*.jpeg')]
-        #ds = []
-        im_list = []
-        #y_list = []
-        e_list = []
-        on_list = []
-        for i in paths:
-            i = list(i)
-            im = cv2.imread(rootDir + '/' + str(i[2]))
-            #encoder = tf.convert_to_tensor(encoder)
-            im = tf.convert_to_tensor(im)
-            #im = tf.reshape(im, [None, self.size, self.size, 3])
-            im_list.append(im)
-            #y_list.append(encoder)
-            e_list.append(e)
-            on_list.append(on)
-            #ds.append((im, y))
-        #dataframe = 
-        df = pd.DataFrame(data={ 'input_1': im_list, 'e': e_list, 'on': on_list
-                          })
-        '''for index, row in df.iterrows():
-            print(row['e'], row['y'], row['input_1'])'''
-        #print(ds)
-        
-        return df
-
-    def dataset_management(self):
-        dir = '../../' + working_directory + '/french/accese'
-        french_on = self.create_dataframe(dir, 0,1)
-        dir = '../../' + working_directory + '/french/spente'
-        french_off = self.create_dataframe(dir,0,0)
-        dir = '../../' + working_directory + '/chinese/accese'
-        chinese_on = self.create_dataframe(dir, 1,1)
-        dir = '../../' + working_directory + '/chinese/spente'
-        chinese_off = self.create_dataframe(dir,1,0)
-        
-        #ds = tf.data.Dataset.from_tensors([chinese_off, french_off, french_on, chinese_on])
-        french = pd.concat([french_off, french_on], ignore_index=True)
-        chinese = pd.concat([chinese_off, chinese_on], ignore_index=True)
-        ds = pd.concat([chinese, french], ignore_index=True)
-        #dataset = tf.data.Dataset.from_tensors((list(ds['images'].values), ds['labels'].values))
-        ds = shuffle(ds)
-        return ds
-              
     def __init__(self, ds_selection = ""):
         global model_loss
         device = torch.device('cpu')
 
         self.ds_selection = ds_selection
-        itd = manipulating_images_better.ImagesToData(ds_selection = self.ds_selection)
+        itd = manipulating_images_better_v2.ImagesToData(ds_selection = self.ds_selection)
         itd.bf_ml()
 
         self.CXT = itd.CXT
@@ -289,14 +203,13 @@ class FeatureExtractor:
                 layer.trainable = True
 
         #model.summary()
-        model_loss = model
+        self.model = model
 
         ####################################################################################
         ###################### TRAINING LAST LAYERS AND FINE TUNING ########################
         print('RETRAINING')
         
         ep = 100
-        eps_fine = 10
         verbose_param = 1
         
         lr_reduce = ReduceLROnPlateau(monitor='val_dense_accuracy', factor=0.2, patience=3, verbose=1, mode='max', min_lr=1e-8)
@@ -325,60 +238,72 @@ class FeatureExtractor:
         
         if self.ds_selection == "chinese":
             print('chinese')
-            ds = self.dataset_management()
-            #ds.shuffle(buffer_size=3)
-            train_size = int(0.9*ds.shape[0])
-            val_size = int(0.1*ds.shape[0])
-            '''dataset = ds.take(train_size)
-            dataset_val = ds.skip(train_size)'''
-            dataset = ds.head(train_size)
-            dataset_val = ds.tail(val_size)
-            '''for row in dataset.iterrows():
-                print('row 0:',row[0])
-                print('row 1:',row[1][0],row[1][1],row[1][2])'''
-            model.compile(loss=custom_loss_w1, optimizer=optimizer, metrics=["accuracy"])
-            dataset = dataset.to_numpy()
-            dataset_val = dataset_val.to_numpy()
-            X = []
-            y = []
-            X_val = []
-            y_val = []
-            for i in dataset:
-                X.append(i[0])
-                y_temp = [i[1], i[2]]
-                y.append(y_temp)
+            dataset = self.chindatagen.flow_from_directory('../../' + working_directory ,
+            target_size = (itd.size, itd.size),
+            batch_size = batch_size,
+            color_mode = 'rgb',
+            class_mode = 'binary',
+            classes = ['spente', 'accese'],
+            subset = 'training',
+            follow_links=True)
 
-            for i in dataset_val:
-                X_val.append(i[0])
-                print('X_VAL(i):',i[0] )
-                y_temp = [i[1], i[2]]
-                print('y_VAL(i):',y_temp )
-                y_val.append(y_temp)
-            print(np.shape(X[0]))
-            print(np.shape(y[0]))
-            history = model.fit(X , y,
-            epochs=ep, validation_data=(X_val, y_val), 
-            callbacks=[early, lr_reduce],verbose=verbose_param)
+            dataset_val = self.chinvaldatagen.flow_from_directory('../../'+ working_directory ,
+            target_size = (itd.size, itd.size),
+            batch_size = batch_size,
+            class_mode = 'binary',
+            classes = ['spente', 'accese'],
+            color_mode = 'rgb',
+            subset = 'validation',
+            follow_links=True)
+            
+            model.compile(loss=[self.custom_loss_w1 , self.custom_loss_w2], optimizer=optimizer, metrics=["accuracy"])
+            
+            history = self.model.fit(dataset,
+            epochs=ep, validation_data=(dataset_val), 
+            callbacks=[early_1, lr_reduce_1],verbose=verbose_param, batch_size=batch_size)
+            
+
+            
             
         if self.ds_selection == "french":
             print('french')
-            ds = self.dataset_management()
-            
-            #ds.shuffle(buffer_size=3)
-            train_size = int(0.9*len(list(ds)))
-            val_size = int(0.1*len(list(ds)))
-            '''dataset = ds.take(train_size)
-            dataset_val = ds.skip(train_size)'''
-            dataset = ds.head(train_size)
-            dataset_val = ds.tail(val_size)
-            for row in dataset.iterrows():
-                print('row 0:',row[0])
-                print('row 1:',row[1])
-            model.compile(loss=[custom_loss_w1, custom_loss_w2], optimizer=optimizer, metrics=["accuracy"])
+            chinese = self.chindatagen.flow_from_directory('../../' + working_directory,
+            target_size = (itd.size, itd.size),
+            batch_size = batch_size,
+            color_mode = 'rgb',
+            class_mode = 'binary',
+            #classes = ['chinese', 'french', 'accese', 'spente'],
+            subset = 'training',
+            follow_links=True)
 
-            history = model.fit(dataset,
-            epochs=ep, validation_data=dataset_val, 
-            callbacks=[early, lr_reduce],verbose=verbose_param)
+            chinese_val = self.chinvaldatagen.flow_from_directory('../../'+ working_directory,
+            target_size = (itd.size, itd.size),
+            batch_size = batch_size,
+            class_mode = 'binary',
+            #classes = ['chinese', 'french', 'accese', 'spente'],
+            color_mode = 'rgb',
+            subset = 'validation',
+            follow_links=True)
+
+            french = self.frendatagen.flow_from_directory('../../' + working_directory,
+            target_size = (itd.size, itd.size),
+            batch_size = batch_size,
+            class_mode = 'sparse',
+            color_mode = 'rgb',
+            subset = 'training',
+            follow_links=True)
+
+            french_val = self.frenvaldatagen.flow_from_directory('../../' + working_directory,
+            target_size = (itd.size, itd.size),
+            batch_size = batch_size,
+            class_mode = 'sparse',
+            color_mode = "rgb",
+            subset = 'validation',
+            follow_links=True)
+
+            history = self.model.fit(X , y,
+            epochs=ep, validation_data=(X_val, y_val), 
+            callbacks=[early_1, lr_reduce_1],verbose=verbose_param, batch_size=batch_size)
         
         self.M = model
             

@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from sklearn.svm import SVC
 from sklearn.model_selection import GridSearchCV
 from torch import logspace
-from FeatureExtractor_EfficientNet import FeatureExtractor
+from FeatureExtractor_VGG16_v2 import FeatureExtractor
 from math import floor
 from sklearn.metrics import confusion_matrix
 import tensorflow as tf

@@ -55,7 +55,7 @@ class RFCClassificator:
                 logspace_max_depth = []
                 for i in np.logspace(0,2,20):
                         logspace_max_depth.append(int(i))
-                for i in np.logspace(0,3,70):
+                for i in np.logspace(0,3,50):
                     logspace_n_estimators.append(int(i))
                 param_grid = { 
                     'n_estimators': logspace_n_estimators,

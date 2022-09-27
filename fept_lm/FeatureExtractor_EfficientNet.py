@@ -148,7 +148,7 @@ class FeatureExtractor:
         
         ep = 100
         eps_fine = 10
-        verbose_param = 0
+        verbose_param = 1
         
         lr_reduce = ReduceLROnPlateau(monitor='val_accuracy', factor=0.2, patience=3, verbose=1, mode='max', min_lr=1e-8)
         #checkpoint = ModelCheckpoint('vgg16_finetune.h15', monitor= 'val_accuracy', mode= 'max', save_best_only = True, verbose= 0)
