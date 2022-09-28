@@ -268,7 +268,20 @@ class SVCClassificator:
                 print(i)
         #print(statistic_C)
         
-
+        ###################################################################
+        ################## PRINT RESULTS ##################################
+        accuracy_C = statistic_C[0][0][0] + statistic_C[0][1][1]
+        accuracy_C_1 = statistic_C_1[0][0][0] + statistic_C_1[0][1][1]
+        accuracy_F = statistic_F[0][0][0] + statistic_F[0][1][1]
+        accuracy_F_1 = statistic_F_1[0][0][0] + statistic_F_1[0][1][1]
+        accuracy_M = statistic_M[0][0][0] + statistic_M[0][1][1]
+        accuracy_M_1 = statistic_M_1[0][0][0] + statistic_M_1[0][1][1]
+        print('Chinese Accuracy Out 0 ', accuracy_C, '%')
+        print('Chinese Accuracy Out 1 ', accuracy_C_1, '%')
+        print('French Accuracy Out 0 ', accuracy_F, '%')
+        print('French Accuracy Out 1 ', accuracy_F_1, '%')
+        print('Mixed Accuracy Out 0 ', accuracy_M, '%')
+        print('Mixed Accuracy Out 1 ', accuracy_M_1, '%')
 
         ####################################################################
         ###################### PLOT IMAGE ##################################

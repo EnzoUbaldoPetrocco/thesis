@@ -159,7 +159,7 @@ class FeatureExtractor:
         adagrad = tf.keras.optimizers.Adagrad(learning_rate)
         adamax = tf.keras.optimizers.Adamax(learning_rate)
 
-        optimizer = sgd
+        optimizer = adam
         fine_optimizer = optimizers.SGD(learning_rate_fine)
 
         model.compile(loss="binary_crossentropy", optimizer=optimizer, metrics=["accuracy"])
