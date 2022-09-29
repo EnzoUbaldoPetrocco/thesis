@@ -140,7 +140,7 @@ class FeatureExtractor:
         ###################### TRAINING LAST LAYERS AND FINE TUNING ########################
         print('RETRAINING')
         
-        ep = 100
+        ep = 5
         eps_fine = 10
         verbose_param = 1
         

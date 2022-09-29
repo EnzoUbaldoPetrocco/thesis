@@ -135,13 +135,13 @@ class FeatureExtractor:
         for layer in model.layers[0].layers[-1:]:
             if not isinstance(layer, layers.BatchNormalization):
                 layer.trainable = True
-        #model.summary()
+        model.summary()
 
         ####################################################################################
         ###################### TRAINING LAST LAYERS AND FINE TUNING ########################
         print('RETRAINING')
         
-        ep = 100
+        ep = 5
         eps_fine = 10
         verbose_param = 1
         

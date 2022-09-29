@@ -87,6 +87,65 @@ class FeatureExtractor:
         else:
             return res
 
+    def chinese_dataset(self):
+        chin_labels = []
+        chin_img = []
+        chinese = self.chindatagen.flow_from_directory('../../' + working_directory + '/chinese',
+        target_size = (self.size, self.size),
+        batch_size = self.batch_size,
+        color_mode = 'rgb',
+        class_mode = 'binary',
+        #classes = ['chinese', 'french', 'accese', 'spente'],
+        subset = 'training',
+        follow_links=True)
+
+        chinese_val = self.chinvaldatagen.flow_from_directory('../../'+ working_directory + '/chinese',
+        target_size = (self.size, self.size),
+        batch_size = self.batch_size,
+        class_mode = 'binary',
+        #classes = ['chinese', 'french', 'accese', 'spente'],
+        color_mode = 'rgb',
+        subset = 'validation',
+        follow_links=True)
+
+        for i in chinese:
+            clabel = tf.constant([0.0])
+            chin_labels.append(tf.stack([clabel,i[1]]))
+            chin_img.append(i[0])
+
+        chin = tf.data.Dataset.from_tensor_slices((chin_img, chin_labels))
+
+    def french_dataset(self):
+        fren_labels = []
+        fren_img = []
+
+        
+        french = self.frendatagen.flow_from_directory('../../' + working_directory + '/french',
+        target_size = (self.size, self.size),
+        batch_size = self.batch_size,
+        color_mode = 'rgb',
+        class_mode = 'binary',
+        #classes = ['chinese', 'french', 'accese', 'spente'],
+        subset = 'training',
+        follow_links=True)
+
+        french_val = self.frenvaldatagen.flow_from_directory('../../'+ working_directory + '/french',
+        target_size = (self.size, self.size),
+        batch_size = self.batch_size,
+        class_mode = 'binary',
+        #classes = ['chinese', 'french', 'accese', 'spente'],
+        color_mode = 'rgb',
+        subset = 'validation',
+        follow_links=True)
+
+        
+        for i in french:
+            clabel = tf.constant([1.0])
+            fren_labels.append(tf.stack([clabel,i[1]]))
+            fren_img.append(i[0])
+
+        fren = tf.data.Dataset.from_tensor_slices((fren_img, fren_labels))
+
     def create_dataframe(self, rootDir, e, on):
         df = []
         '''for dirName, subdirList, fileList in os.walk(rootDir):
@@ -139,7 +198,7 @@ class FeatureExtractor:
         4.64158883e+00, 6.81292069e+00, 1.00000000e+01, 1.46779927e+01,
         2.15443469e+01, 3.16227766e+01, 4.64158883e+01, 6.81292069e+01,
         1.00000000e+02]
-        self.lamb =  lambda_grid[10]
+        self.lamb =  lambda_grid[8]
 
         self.CXT = itd.CXT
         self.CYT = itd.CYT
@@ -177,15 +236,20 @@ class FeatureExtractor:
         ######################################################################################
         ############################# MODEL GENERATION #######################################
         input = Input((itd.size, itd.size, 3))
-        x = ResNet50( #tf.keras.applications.efficientnet.EfficientNetB0
+        x = EfficientNetB3( #tf.keras.applications.efficientnet.EfficientNetB0
             input_shape=(itd.size, itd.size, 3),
             weights='imagenet',
             include_top=False)(input)
         
         #model.summary()
         x = Flatten()(x)
+        x = Dropout(0.15)(x)
+        x = Dense(20, activation='relu', name='feature_extractor')(x)
         chin = Dense(1, activation='sigmoid', name='dense')(x)
         fren = Dense(1, activation='sigmoid', name='dense_1')(x)
+        #chin.summary()
+        #fren.summary()
+        #inputs = Input(shape=(itd.size, itd.size, 3))
         model = Model(inputs=input,
                      outputs = [chin,fren],
                      name= 'model')
@@ -194,7 +258,7 @@ class FeatureExtractor:
         for layer in model.layers[1].layers:
             layer.trainable = False
         #model.summary()
-        for layer in model.layers[1].layers[-1:]:
+        for layer in model.layers[1].layers[-4:]:
             if not isinstance(layer, layers.BatchNormalization):
                 layer.trainable = True
 
@@ -205,7 +269,7 @@ class FeatureExtractor:
         ###################### TRAINING LAST LAYERS AND FINE TUNING ########################
         print('RETRAINING')
         
-        ep = 8
+        ep = 100
         verbose_param = 1
         #self.batch_end = self.CustomCallback(self.model, self.lamb)
         
@@ -217,7 +281,7 @@ class FeatureExtractor:
         #checkpoint = ModelCheckpoint('vgg16_finetune.h15', monitor= 'val_accuracy', mode= 'max', save_best_only = True, verbose= 0)
         early_1 = EarlyStopping(monitor='val_dense_1_accuracy', min_delta=0.001, patience=13, verbose=1, mode='auto')
         
-        learning_rate= 4e-4
+        learning_rate= 4e-3
         learning_rate_fine = 1e-8
         
         adam = optimizers.Adam(learning_rate)
@@ -227,13 +291,14 @@ class FeatureExtractor:
         adagrad = tf.keras.optimizers.Adagrad(learning_rate)
         adamax = tf.keras.optimizers.Adamax(learning_rate)
 
-        optimizer = adam
+        optimizer = sgd
         fine_optimizer = optimizers.SGD(learning_rate_fine)
 
         
         if self.ds_selection == "chinese":
             print('chinese')
             ds = self.dataset_management()
+            #ds.shuffle(buffer_size=3)
             train_size = int(0.9*ds.shape[0])
             val_size = int(0.1*ds.shape[0])
             dataset = ds.head(train_size)
@@ -270,11 +335,12 @@ class FeatureExtractor:
         if self.ds_selection == "french":
             print('french')
             ds = self.dataset_management()
+            #ds.shuffle(buffer_size=3)
             train_size = int(0.9*ds.shape[0])
             val_size = int(0.1*ds.shape[0])
             dataset = ds.head(train_size)
             dataset_val = ds.tail(val_size)
-            self.model.compile(loss=[self.custom_loss_w2, self.custom_loss_w1], optimizer=optimizer, metrics=["accuracy"],  loss_weights=[1,1])#, run_eagerly=True)
+            self.model.compile(loss=[self.custom_loss_w1, self.custom_loss_w2], optimizer=optimizer, metrics=["accuracy"],  loss_weights=[1,1])#, run_eagerly=True)
             dataset = dataset.to_numpy()
             dataset_val = dataset_val.to_numpy()
             
