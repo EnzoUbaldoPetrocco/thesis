@@ -130,6 +130,20 @@ class FeatureExtractor:
         self.ds_selection = ds_selection
         itd = manipulating_images_better.ImagesToData(ds_selection = self.ds_selection)
         itd.bf_ml()
+        itd.little_mix()
+
+        MCX = itd.MCX
+        CXT = itd.CXT
+        MCY = itd.MCY
+        CYT = itd.CYT
+
+        MFX = itd.MFX
+        FXT = itd.FXT
+        MFY = itd.MFY
+        FYT = itd.FYT
+
+        MXT = itd.MXT
+        MYT = itd.MYT
 
                 
         lambda_grid = [1.00000000e-02, 1.46779927e-02, 2.15443469e-02,  3.16227766e-02,
@@ -141,12 +155,7 @@ class FeatureExtractor:
         1.00000000e+02]
         self.lamb =  lambda_grid[20]
 
-        self.CXT = itd.CXT
-        self.CYT = itd.CYT
-        self.FXT = itd.FXT
-        self.FYT = itd.FYT
-        self.MXT = itd.MXT
-        self.MYT = itd.MYT
+        
         self.size = itd.size
 
         batch_size = 1
@@ -306,76 +315,146 @@ class FeatureExtractor:
         
         #print(model.layers[-2])
         #model = Model(inputs=model.inputs, outputs=model.layers[:-2])
-        #french_output = 
-        model.layers.pop()        
-        #model.summary()
+        
+        
+        out0model = Model(inputs=model.inputs, outputs=model.layers[:-2])      
+        out0model.summary()
+        out1model = Model(inputs=model.inputs, outputs=model.layers[:-1])      
+        out1model.summary()
         #device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         #print('Using device:' , device)
         
         print('FEATURE EXTRACTION')
         features = []
-        for i in self.MCX:
+        for i in MCX:
             x = np.reshape(i, (itd.size,itd.size))*255
             x = cv2.merge([x,x,x])
             x = image.img_to_array(x)
             x = np.expand_dims(x, axis=0)
-            feature = model.predict(x, verbose = 0)
+            feature = out0model.predict(x, verbose = 0)
             features.append(feature[0].flatten())
 
             
-        self.MCX = np.array(features)
-        self.MCY = self.MCY
+        self.out0MCX = np.array(features)
+        self.out0MCY = MCY
 
         features = []
-        for i in self.CXT:
+        for i in MCX:
             x = np.reshape(i, (itd.size,itd.size))*255
             x = cv2.merge([x,x,x])
             x = image.img_to_array(x)
             x = np.expand_dims(x, axis=0)
-            feature = model.predict(x, verbose = 0)
+            feature = out1model.predict(x, verbose = 0)
             features.append(feature[0].flatten())
-        
-        self.CXT = np.array(features)
-        self.CYT = self.CYT
 
-        features = []
-        for i in self.MFX:
-            x = np.reshape(i, (itd.size,itd.size))*255
-            x = cv2.merge([x,x,x])
-            x = image.img_to_array(x)
-            x = np.expand_dims(x, axis=0)
-            feature = model.predict(x, verbose = 0)
-            features.append(feature[0].flatten())
-        
-        self.MFX = np.array(features)
-        self.MFY = self.MFY
-
-        features = []
-        for i in self.FXT:
-            x = np.reshape(i, (itd.size,itd.size))*255
-            x = cv2.merge([x,x,x])
-            x = image.img_to_array(x)
-            x = np.expand_dims(x, axis=0)
-            feature = model.predict(x, verbose = 0)
-            features.append(feature[0].flatten())
-        
-        self.FXT = np.array(features)
-        self.FYT = self.FYT
-
-        features = []
-        for i in self.MXT:
-            x = np.reshape(i, (itd.size,itd.size))*255
-            x = cv2.merge([x,x,x])
-            x = image.img_to_array(x)
-            x = np.expand_dims(x, axis=0)
-            feature = model.predict(x, verbose = 0)
-            features.append(feature[0].flatten())
-        
-        self.MXT = np.array(features)
-        self.MYT = self.MYT
-
-        self.M = self.model
             
+        self.out1MCX = np.array(features)
+        self.out1MCY = MCY
+
+        ###################################
+
+        features = []
+        for i in CXT:
+            x = np.reshape(i, (itd.size,itd.size))*255
+            x = cv2.merge([x,x,x])
+            x = image.img_to_array(x)
+            x = np.expand_dims(x, axis=0)
+            feature = out0model.predict(x, verbose = 0)
+            features.append(feature[0].flatten())
+        
+        self.out0CXT = np.array(features)
+        self.out0CYT = CYT
+
+        features = []
+        for i in CXT:
+            x = np.reshape(i, (itd.size,itd.size))*255
+            x = cv2.merge([x,x,x])
+            x = image.img_to_array(x)
+            x = np.expand_dims(x, axis=0)
+            feature = out1model.predict(x, verbose = 0)
+            features.append(feature[0].flatten())
+        
+        self.out1CXT = np.array(features)
+        self.out1CYT = CYT
+
+        ############################################
+
+        features = []
+        for i in MFX:
+            x = np.reshape(i, (itd.size,itd.size))*255
+            x = cv2.merge([x,x,x])
+            x = image.img_to_array(x)
+            x = np.expand_dims(x, axis=0)
+            feature = out0model.predict(x, verbose = 0)
+            features.append(feature[0].flatten())
+        
+        self.out0MFX = np.array(features)
+        self.out0MFY = MFY
+
+        features = []
+        for i in MFX:
+            x = np.reshape(i, (itd.size,itd.size))*255
+            x = cv2.merge([x,x,x])
+            x = image.img_to_array(x)
+            x = np.expand_dims(x, axis=0)
+            feature = out1model.predict(x, verbose = 0)
+            features.append(feature[0].flatten())
+        
+        self.out1MFX = np.array(features)
+        self.out1MFY = MFY
+
+        ###############################################
+
+        features = []
+        for i in FXT:
+            x = np.reshape(i, (itd.size,itd.size))*255
+            x = cv2.merge([x,x,x])
+            x = image.img_to_array(x)
+            x = np.expand_dims(x, axis=0)
+            feature = out0model.predict(x, verbose = 0)
+            features.append(feature[0].flatten())
+        
+        self.out0FXT = np.array(features)
+        self.out0FYT = FYT
+
+        features = []
+        for i in FXT:
+            x = np.reshape(i, (itd.size,itd.size))*255
+            x = cv2.merge([x,x,x])
+            x = image.img_to_array(x)
+            x = np.expand_dims(x, axis=0)
+            feature = out1model.predict(x, verbose = 0)
+            features.append(feature[0].flatten())
+        
+        self.out1FXT = np.array(features)
+        self.out1FYT = FYT
+
+        ##################################################
+
+        features = []
+        for i in MXT:
+            x = np.reshape(i, (itd.size,itd.size))*255
+            x = cv2.merge([x,x,x])
+            x = image.img_to_array(x)
+            x = np.expand_dims(x, axis=0)
+            feature = out0model.predict(x, verbose = 0)
+            features.append(feature[0].flatten())
+        
+        self.out0MXT = np.array(features)
+        self.out0MYT = MYT
+
+        features = []
+        for i in MXT:
+            x = np.reshape(i, (itd.size,itd.size))*255
+            x = cv2.merge([x,x,x])
+            x = image.img_to_array(x)
+            x = np.expand_dims(x, axis=0)
+            feature = out1model.predict(x, verbose = 0)
+            features.append(feature[0].flatten())
+        
+        self.out1MXT = np.array(features)
+        self.out1MYT = MYT
+
             
         ##############################################################
         ############## PLOT SOME RESULTS ############################

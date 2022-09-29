@@ -74,77 +74,148 @@ class SVCClassificator:
                 ############### READ DATA ##################################
                 itd = FeatureExtractor(self.ds_selection)
 
-                CXT = itd.CXT
-                CYT = itd.CYT
-                FXT = itd.FXT
-                FYT = itd.FYT
-                MXT = itd.MXT
-                MYT = itd.MYT
+                out0MCX = itd.out0MCX
+                out0CXT = itd.out0CXT
+                out0MCY = itd.out0MCY
+                out0CYT = itd.out0CYT
 
-                M = itd.M
+                out0MFX = itd.out0MFX
+                out0FXT = itd.out0FXT
+                out0MFY = itd.out0MFY
+                out0FYT = itd.out0FYT
+
+                out0MXT = itd.out0MXT
+                out0MYT = itd.out0MYT
+
+                out1MCX = itd.out1MCX
+                out1CXT = itd.out1CXT
+                out1MCY = itd.out1MCY
+                out1CYT = itd.out1CYT
+
+                out1MFX = itd.out1MFX
+                out1FXT = itd.out1FXT
+                out1MFY = itd.out1MFY
+                out1FYT = itd.out1FYT
+
+                out1MXT = itd.out1MXT
+                out1MYT = itd.out1MYT
+                
+                
                 self.size = itd.size
 
                 ###############################################################
-                ######################### TESTING #############################
+                ######################## TESTING out0 #############################
+                points = 80
+                print('MODEL SELECTION AND TUNING')
+                if self.kernel == 'rbf':
+                    logspaceC = np.logspace(-2,2.5,points)
+                    logspaceGamma = np.logspace(-2,2.5,points)
+                if self.kernel == 'linear':
+                    logspaceC = np.logspace(-2,2.5,points)
+                    logspaceGamma = np.logspace(-2,2.5,points)
+                grid = {'C':        logspaceC,
+                        'kernel':   [self.kernel],
+                        'gamma':    logspaceGamma}
+                MS = GridSearchCV(estimator = SVC(),
+                                param_grid = grid,
+                                scoring = 'balanced_accuracy',
+                                cv = 10,
+                                verbose = 0)
+                if self.ds_selection == "chinese":
+                    H = MS.fit(out0MCX,out0MCY)
+                if self.ds_selection == "french":
+                    H = MS.fit(out0MFX,out0MFY)
+                
+                print('CLASSIFICATION')
+                print('C best param')
+                print(H.best_params_['C'])
+                print('gamma best param')
+                print(H.best_params_['gamma'])
+
+                out0M = SVC(C = H.best_params_['C'],
+                        kernel = H.best_params_['kernel'],
+                        gamma = H.best_params_['gamma'])
+
+                if self.ds_selection == "chinese":
+                    out0M = MS.fit(out0MCX,out0MCY)
+                if self.ds_selection == "french":
+                    out0M = MS.fit(out0MFX,out0MFY)
+
+
+                ######################## TESTING out1 #############################
+                points = 80
+                print('MODEL SELECTION AND TUNING')
+                if self.kernel == 'rbf':
+                    logspaceC = np.logspace(-2,2.5,points)
+                    logspaceGamma = np.logspace(-2,2.5,points)
+                if self.kernel == 'linear':
+                    logspaceC = np.logspace(-2,2.5,points)
+                    logspaceGamma = np.logspace(-2,2.5,points)
+                grid = {'C':        logspaceC,
+                        'kernel':   [self.kernel],
+                        'gamma':    logspaceGamma}
+                MS = GridSearchCV(estimator = SVC(),
+                                param_grid = grid,
+                                scoring = 'balanced_accuracy',
+                                cv = 10,
+                                verbose = 0)
+                if self.ds_selection == "chinese":
+                    H = MS.fit(out1MCX,out1MCY)
+                if self.ds_selection == "french":
+                    H = MS.fit(out1MFX,out1MFY)
+                
+                print('CLASSIFICATION')
+                print('C best param')
+                print(H.best_params_['C'])
+                print('gamma best param')
+                print(H.best_params_['gamma'])
+
+                out1M = SVC(C = H.best_params_['C'],
+                        kernel = H.best_params_['kernel'],
+                        gamma = H.best_params_['gamma'])
+
+                if self.ds_selection == "chinese":
+                    out1M = MS.fit(out1MCX,out1MCY)
+                if self.ds_selection == "french":
+                    out1M = MS.fit(out1MFX,out1MFY)
+
+                
+                ####################################################
+                ################## TESTING out0 #########################
+
                 print('PREDICTING CHINESE TEST SET')
-                CYF = []
-                CYF_1 = []
-                for i in CXT:
-                        x = np.reshape(i, (itd.size,itd.size))*255
-                        x = cv2.merge([x,x,x])
-                        x = image.img_to_array(x)
-                        x = np.expand_dims(x, axis=0)
-                        feature = M.predict(x, verbose = 0)
-                        y_pred = self.evaluate_sigmoid(feature[0][0])
-                        y_pred_1 = self.evaluate_sigmoid(feature[1][0])
-                        CYF.append(y_pred)
-                        CYF_1.append(y_pred_1)
-                        
-                cm = confusion_matrix(CYT,CYF)
+                CYF = out0M.predict(out0CXT)
+                cm = confusion_matrix(out0CYT,CYF)
                 print(cm)
-                cm_1 = confusion_matrix(CYT,CYF_1)
-                print(cm_1)
                 Ccm_list.append(cm)
-                Ccm_1_list.append(cm_1)
                 print('Predicting FRENCH TEST SET')
-                CFYF = []
-                CFYF_1 = []
-                for i in FXT:
-                        x = np.reshape(i, (itd.size,itd.size))*255
-                        x = cv2.merge([x,x,x])
-                        x = image.img_to_array(x)
-                        x = np.expand_dims(x, axis=0)
-                        feature = M.predict(x, verbose = 0)
-                        y_pred = self.evaluate_sigmoid(feature[0][0])
-                        y_pred_1 = self.evaluate_sigmoid(feature[1][0])
-                        CFYF.append(y_pred)
-                        CFYF_1.append(y_pred_1)
-                        
-                cm = confusion_matrix(FYT,CFYF)
+                CFYF = out0M.predict(out0FXT)
+                cm = confusion_matrix(out0FYT,CFYF)
                 print(cm)
-                cm_1 = confusion_matrix(FYT,CFYF_1)
-                print(cm_1)
                 Fcm_list.append(cm)
-                Fcm_1_list.append(cm_1)
                 print('PREDICTING MIX TEST SET')
-                MYF = []
-                MYF_1 = []
-                for i in MXT:
-                        x = np.reshape(i, (itd.size,itd.size))*255
-                        x = cv2.merge([x,x,x])
-                        x = image.img_to_array(x)
-                        x = np.expand_dims(x, axis=0)
-                        feature = M.predict(x, verbose = 0)
-                        y_pred = self.evaluate_sigmoid(feature[0][0])
-                        y_pred_1 = self.evaluate_sigmoid(feature[1][0])
-                        MYF.append(y_pred)
-                        MYF_1.append(y_pred_1)
-                cm = confusion_matrix(MYT,MYF)
+                MYF = out0M.predict(out0MXT)
+                cm = confusion_matrix(out0MYT,MYF)
                 print(cm)
                 Mcm_list.append(cm)
-                cm_1 = confusion_matrix(MYT,MYF_1)
-                Mcm_1_list.append(cm_1)
-                print(cm_1)
+
+                ################## TESTING out1 #########################
+
+                print('PREDICTING CHINESE TEST SET')
+                CYF = out1M.predict(out1CXT)
+                cm = confusion_matrix(out1CYT,CYF)
+                print(cm)
+                Ccm_1_list.append(cm)
+                print('Predicting FRENCH TEST SET')
+                CFYF = out1M.predict(out1FXT)
+                cm = confusion_matrix(out1FYT,CFYF)
+                print(cm)
+                Fcm_1_list.append(cm)
+                print('PREDICTING MIX TEST SET')
+                MYF = out1M.predict(out1MXT)
+                cm = confusion_matrix(out1MYT,MYF)
+                print(cm)
+                Mcm_1_list.append(cm)
 
 
         ######################################################
