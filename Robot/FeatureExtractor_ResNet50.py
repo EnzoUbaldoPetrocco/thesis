@@ -298,8 +298,8 @@ class FeatureExtractor:
             
 
         self.M = self.model
-        last = os.listdir(checkpoint_dir)
-        latest = tf.train.latest_checkpoint(checkpoint_dir)
+        #last = os.listdir(checkpoint_dir)
+        #latest = tf.train.latest_checkpoint(checkpoint_dir)
         print(last)
         print(latest)
             
