@@ -257,7 +257,7 @@ class FeatureExtractor:
             print(np.linalg.norm(np.array([i[0] for i in self.model.layers[len(self.model.layers)-2].get_weights()])-np.array([i[0] for i in self.model.layers[len(self.model.layers)-1].get_weights()])))
             history = self.model.fit(X , y,
             epochs=ep, validation_data=(X_val, y_val), 
-            callbacks=[early, lr_reduce, cp_callback],verbose=verbose_param, batch_size=batch_size)
+            callbacks=[early, lr_reduce],verbose=verbose_param, batch_size=batch_size)
             print(np.linalg.norm(np.array([i[0] for i in self.model.layers[len(self.model.layers)-2].get_weights()])-np.array([i[0] for i in self.model.layers[len(self.model.layers)-1].get_weights()])))
             
         if self.ds_selection == "french":
@@ -293,7 +293,7 @@ class FeatureExtractor:
             print(np.linalg.norm(np.array([i[0] for i in self.model.layers[len(self.model.layers)-2].get_weights()])-np.array([i[0] for i in self.model.layers[len(self.model.layers)-1].get_weights()])))
             history = self.model.fit(X , y,
             epochs=ep, validation_data=(X_val, y_val), 
-            callbacks=[early_1, lr_reduce_1, cp_callback],verbose=verbose_param, batch_size=batch_size)
+            callbacks=[early_1, lr_reduce_1],verbose=verbose_param, batch_size=batch_size)
             print(np.linalg.norm(np.array([i[0] for i in self.model.layers[len(self.model.layers)-2].get_weights()])-np.array([i[0] for i in self.model.layers[len(self.model.layers)-1].get_weights()])))
             
 
