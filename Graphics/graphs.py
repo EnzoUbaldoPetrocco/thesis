@@ -5,10 +5,12 @@ import numpy as np
 ## This program should be used for creating plots of some relevant results
 
 class Mitigation:
-    def __init__(self, acc_main_class, acc_second_class, x):
+    def __init__(self, acc_main_class, acc_second_class, x, fig_title, titles):
         self.accuracy_main_class = acc_main_class
         self.accuracy_second_class = acc_second_class
         self.x = x
+        self.titles = titles
+        self.fig_title = fig_title
 
     def plot_main(self):
         fig, ax = plt.subplots()
@@ -32,6 +34,38 @@ class Mitigation:
         '''
         plt.show()
 
+    def plot_metric(self):
+        fig, ax = plt.subplots()
+        y = []
+        for i in range(0,len(self.accuracy_main_class)):
+            k = (self.accuracy_main_class[i]+self.accuracy_second_class[i])/2
+            y.append(k)
+        ax.plot(self.x, self.accuracy_main_class, linewidth=2.0)
+        plt.show()
+
+    def plot_together(self):
+        fig = plt.figure(figsize=plt.figaspect(5.))
+        fig.suptitle(self.fig_title, fontsize=16)
+        ax1 = fig.add_subplot(2, 2, 1)
+        ax2 = fig.add_subplot(2, 2, 2)
+        ax3 = fig.add_subplot(2, 2, 3, projection='3d')
+        ax4 = fig.add_subplot(2, 2, 4)
+        X, Y, Z = self.x, self.accuracy_main_class, self.accuracy_second_class
+        y = []
+        for i in range(0,len(self.accuracy_main_class)):
+            k = (self.accuracy_main_class[i]+self.accuracy_second_class[i])/2
+            y.append(k)
+        ax1.set_title(self.titles[0])
+        ax2.set_title(self.titles[1])
+        ax3.set_title(self.titles[2])
+        ax4.set_title(self.titles[3])
+        ax1.plot(self.x, self.accuracy_main_class, linewidth=2.0)
+        ax2.plot(self.x, self.accuracy_second_class, linewidth=2.0)
+        ax3.plot(X,Y,Z)
+        ax4.plot(self.x, self.accuracy_main_class, linewidth=2.0)
+
+
+
 class Histograms:
     def __init__(self, labels, percentages, y_labels, title):
         self.labels = labels
@@ -41,14 +75,18 @@ class Histograms:
 
     def plot(self):
         fig, ax = plt.subplots()
-        bar_colors = ['tab:red', 'tab:blue', 'tab:black', 'tab:orange']
+        bar_colors = ['tab:red', 'tab:blue', 'tab:green', 'tab:orange', 'tab:purple']
         ax.bar(self.labels, self.percentages, label=self.labels, color=bar_colors[:len(self.labels)-1])
         ax.set_ylabel(self.y_labels)
         ax.set_title(self.title)
+        #plt.yticks(self.percentages)
+        plt.yticks(np.arange(40,80,5 ))
+        plt.ylim(40,80)
+        plt.grid()
         plt.show()
 
-
-rng = np.random.default_rng(12345)
+    
+'''rng = np.random.default_rng(12345)
 acc_main_class = []
 acc_second_class = []
 for i in range(0,25):
@@ -59,6 +97,7 @@ for i in range(0,25):
     acc_second_class.append(60 + rfloat%10)
 x = np.logspace(0,2,25)
 mit = Mitigation(acc_main_class, acc_second_class, x)
+mit.plot_metric()
 mit.plot_main()
 mit.plot_second()
 mit.plot_3d()
@@ -68,6 +107,6 @@ percentages = [60, 80]
 y_labels = ["chin", "french"]
 title = "Histogram"
 hist = Histograms(labels, percentages, y_labels, title )
-hist.plot()
+hist.plot()'''
 
 
