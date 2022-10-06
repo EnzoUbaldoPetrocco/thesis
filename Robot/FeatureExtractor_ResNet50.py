@@ -131,6 +131,13 @@ class FeatureExtractor:
         itd = manipulating_images_better.ImagesToData(ds_selection = self.ds_selection)
         itd.bf_ml()
 
+        self.CXT = itd.CXT
+        self.CYT = itd.CYT
+        self.FXT = itd.FXT
+        self.FYT = itd.FYT
+        self.MXT = itd.MXT
+        self.MYT = itd.MYT
+
         self.size = itd.size
 
         batch_size = 1
@@ -184,13 +191,12 @@ class FeatureExtractor:
 
         #model.summary()
         self.model = model
-        model.save_weights('./checkpoints/' + self.ds_selection +'/my_checkpoint' + str(self.lamb))
 
         ####################################################################################
         ###################### TRAINING LAST LAYERS AND FINE TUNING ########################
         print('RETRAINING')
         
-        ep = 8
+        ep = 5
         verbose_param = 1
         #self.batch_end = self.CustomCallback(self.model, self.lamb)
         
@@ -300,8 +306,11 @@ class FeatureExtractor:
         self.M = self.model
         #last = os.listdir(checkpoint_dir)
         #latest = tf.train.latest_checkpoint(checkpoint_dir)
-        print(last)
-        print(latest)
+        #print(last)
+        #print(latest)
+
+        
+        model.save_weights('./checkpoints/' + self.ds_selection +'/my_checkpoint' + str(self.lamb))
             
             
         ##############################################################
