@@ -214,7 +214,7 @@ class FeatureExtractor:
         ###################### TRAINING LAST LAYERS AND FINE TUNING ########################
         print('RETRAINING')
         
-        ep = 8
+        ep = 3
         verbose_param = 1
         #self.batch_end = self.CustomCallback(self.model, self.lamb)
         

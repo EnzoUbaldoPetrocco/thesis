@@ -249,16 +249,26 @@ class ImagesToData:
 
   def prepare_ds(self):
     ### Divisions
-  
-    self.CXT  = self.chinese[0:int(len(self.chinese)/2)]
-    self.CYT = self.chinese_categories[0: int(len(self.chinese)/2)]
-    self.MXT = self.chinese[int(len(self.chinese)/2) : len(self.chinese)]
-    self.MYT = self.chinese_categories[int(len(self.chinese)/2): len(self.chinese)]
+    # CXT = FXT = 3/26 TOT
+    # MXT = 3/13 TOT
+    # MCX = MFX = 7/13 TOT
+    # TOT = len(chinese+french)
 
-    self.FXT = self.french[0:int(len(self.chinese)/2)]
-    self.FYT = self.french_categories[0:int(len(self.chinese)/2)]
-    self.MXT = numpy.concatenate((self.MXT, self.french[int(len(self.chinese)/2) : len(self.chinese)]), axis = 0)
-    self.MYT = numpy.concatenate((self.MYT, self.french_categories[int(len(self.chinese)/2) : len(self.chinese)]), axis = 0)
+
+    self.CXT  = self.chinese[0:int(len(self.chinese)*3/13)]
+    self.CYT = self.chinese_categories[0: int(len(self.chinese)*3/13)]
+    self.MXT = self.chinese[int(len(self.chinese)*3/13) : int(len(self.chinese)*6/13)]
+    self.MYT = self.chinese_categories[int(len(self.chinese)*3/13): int(len(self.chinese)*6/13)]
+
+    self.FXT = self.french[0:int(len(self.chinese)*3/13)]
+    self.FYT = self.french_categories[0:int(len(self.chinese)*3/13)]
+    self.MXT = numpy.concatenate((self.MXT, self.french[int(len(self.chinese)*3/13) : int(len(self.chinese)*6/13)]), axis = 0)
+    self.MYT = numpy.concatenate((self.MYT, self.french_categories[int(len(self.chinese)*3/13) : int(len(self.chinese)*6/13)]), axis = 0)
+
+    self.CX= self.chinese[int(len(self.chinese)*6/13): int(len(self.chinese))]
+    self.CY= self.chinese_categories[int(len(self.chinese)*6/13): int(len(self.chinese))]
+    self.FX= self.french[int(len(self.chinese)*6/13): int(len(self.chinese))]
+    self.FY= self.french_categories[int(len(self.chinese)*6/13): int(len(self.chinese))]
 
     self.CXT = numpy.array(self.CXT)
     self.CYT = numpy.array(self.CYT)
@@ -268,6 +278,14 @@ class ImagesToData:
     
     self.MXT = numpy.array(self.MXT)
     self.MYT = numpy.array(self.MYT)
+
+    self.CX = numpy.array(self.CX)
+    self.CY = numpy.array(self.CY)
+    
+    self.FX = numpy.array(self.FX)
+    self.FY = numpy.array(self.FY)
+
+
 
   def little_mix(self):
     self.MCX = list(self.CX)
