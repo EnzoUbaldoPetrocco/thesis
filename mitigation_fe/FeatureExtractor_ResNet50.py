@@ -317,9 +317,9 @@ class FeatureExtractor:
         #model = Model(inputs=model.inputs, outputs=model.layers[:-2])
         
         
-        out0model = Model(inputs=model.inputs, outputs=model.layers[:-2])      
+        out0model = Model(inputs=model.inputs, outputs=model.get_layer('dense'))      
         out0model.summary()
-        out1model = Model(inputs=model.inputs, outputs=model.layers[:-1])      
+        out1model = Model(inputs=model.inputs, outputs=model.get_layer('dense'))      
         out1model.summary()
         #device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         #print('Using device:' , device)
