@@ -143,7 +143,7 @@ class SVCClassificator:
 
 
                 ######################## TESTING out1 #############################
-                points = 80
+                points = 70
                 print('MODEL SELECTION AND TUNING')
                 if self.kernel == 'rbf':
                     logspaceC = np.logspace(-2,2.5,points)

@@ -88,9 +88,6 @@ class RModel:
         #model.load_weights(latest)
         self.model.load_weights('./checkpoints/' + self.ds_selection +'/my_checkpoint' + str(self.lamb))
 
-
-
-
     
     def evaluate_sigmoid(self,y_pred, im_cult_info):
         if y_pred[im_cult_info][0][0]<0.5:
@@ -119,13 +116,15 @@ class RModel:
         list_size.append(math.ceil((self.itd.size - width)/2))
         return list_size
 
-    def evaluate_image(self, im, im_cult_info):
+    def evaluate_image(self, im, im_cult_info, y_true):
         im = self.preprocessing(im)
+        
         Y_pred = self.model.predict(im, verbose = 0)
         y = self.evaluate_sigmoid(Y_pred,im_cult_info)
-        '''plt.figure()
-        plt.imshow(im[0])
-        plt.show()'''
+        #print("Y_pred: Out0", str(Y_pred[0][0]), "Out1: ",str(Y_pred[1][0]) )
+        #print("y: ", str(y))
+        #print("y_true: ", str(y_true))
+        
         return y
 
     def preprocessing(self, im):
@@ -135,9 +134,12 @@ class RModel:
         im = cv2.copyMakeBorder(im, tblr[0],tblr[1],tblr[2],tblr[3],cv2.BORDER_CONSTANT,value=[255,255,255])
         im = rgb2gray(im)
         im = pd.DataFrame(im).to_numpy()
-        im = cv2.merge([im,im,im])
+        im = cv2.merge([im,im,im])*255
         im = image.img_to_array(im)
         im = np.expand_dims(im, axis=0)
+        '''plt.figure()
+        plt.imshow(im[0])
+        plt.show()'''
         return im
 
 

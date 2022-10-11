@@ -153,7 +153,7 @@ class FeatureExtractor:
         4.64158883e+00, 6.81292069e+00, 1.00000000e+01, 1.46779927e+01,
         2.15443469e+01, 3.16227766e+01, 4.64158883e+01, 6.81292069e+01,
         1.00000000e+02]
-        self.lamb =  lambda_grid[20]
+        self.lamb = 0 #lambda_grid[18]
 
         
         self.size = itd.size

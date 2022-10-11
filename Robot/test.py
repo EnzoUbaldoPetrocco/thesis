@@ -39,8 +39,8 @@ lambda_grid = [1.00000000e-02, 1.46779927e-02, 2.15443469e-02,  3.16227766e-02,
         4.64158883e+00, 6.81292069e+00, 1.00000000e+01, 1.46779927e+01,
         2.15443469e+01, 3.16227766e+01, 4.64158883e+01, 6.81292069e+01,
         1.00000000e+02]
-lamb =  lambda_grid[20]
-n_images = 100
+lamb =  0 #lambda_grid[18]
+n_images = 250
 chinese_on = get_images("../../TEST/chinese_on", n_images=n_images)
 chinese_off = get_images("../../TEST/chinese_off", n_images=n_images)
 french_on = get_images("../../TEST/french_on", n_images=n_images)
@@ -64,7 +64,7 @@ MYT = chinese_model.MYT
 
 ##########################################################
 #################### ORIGINAL MODEL TEST##################
-print('ORIGINAL MODEL')
+'''print('ORIGINAL MODEL')
 print('PREDICTING WITH CHINESE MODEL')
 print('predicting CHINESE TEST SET')
 CYF = []
@@ -163,20 +163,34 @@ for i in MXT:
 frenmixcm = confusion_matrix(MYT,MYF)
 frenmixcm_1 = confusion_matrix(MYT,MYF_1)
 
+###########################################
+############## PRINT RESULTS #############
+print('Accuracy of chinese images from chinese model output 0:')
 print_accuracy(chinchincm, len(CXT))
+print('Accuracy of chinese images from chinese model output 1:')
 print_accuracy(chinchincm_1, len(CXT))
+print('Accuracy of french images from chinese model output 0:')
 print_accuracy(chinfrencm, len(FXT))
+print('Accuracy of french images from chinese model output 1:')
 print_accuracy(chinfrencm_1, len(FXT))
+print('Accuracy of mixed images from chinese model output 0:')
 print_accuracy(chinmixcm, len(MXT))
+print('Accuracy of mixed images from chinese model output 1:')
 print_accuracy(chinmixcm_1, len(MXT))
 
+print('Accuracy of chinese images from french model output 0:')
 print_accuracy(frenchincm, len(CXT))
+print('Accuracy of chinese images from french model output 1:')
 print_accuracy(frenchincm_1, len(CXT))
+print('Accuracy of french images from french model output 0:')
 print_accuracy(frenfrencm, len(FXT))
+print('Accuracy of french images from french model output 1:')
 print_accuracy(frenfrencm_1, len(FXT))
+print('Accuracy of mixed images from french model output 0:')
 print_accuracy(frenmixcm, len(MXT))
+print('Accuracy of mixed images from french model output 1:')
 print_accuracy(frenmixcm, len(MXT))
-
+'''
 
 ###############################################################
 ######################### TESTING #############################
@@ -280,19 +294,38 @@ for i in MXT:
 frenmixcm = confusion_matrix(MYT,MYF)
 frenmixcm_1 = confusion_matrix(MYT,MYF_1)
 
+###########################################
+############## PRINT RESULTS #############
+print('Accuracy of chinese images from chinese model output 0:')
 print_accuracy(chinchincm, len(CXT))
+print('Accuracy of chinese images from chinese model output 1:')
 print_accuracy(chinchincm_1, len(CXT))
+print('Accuracy of french images from chinese model output 0:')
 print_accuracy(chinfrencm, len(FXT))
+print('Accuracy of french images from chinese model output 1:')
 print_accuracy(chinfrencm_1, len(FXT))
+print('Accuracy of mixed images from chinese model output 0:')
 print_accuracy(chinmixcm, len(MXT))
+print('Accuracy of mixed images from chinese model output 1:')
 print_accuracy(chinmixcm_1, len(MXT))
 
+print('Accuracy of chinese images from french model output 0:')
 print_accuracy(frenchincm, len(CXT))
+print('Accuracy of chinese images from french model output 1:')
 print_accuracy(frenchincm_1, len(CXT))
+print('Accuracy of french images from french model output 0:')
 print_accuracy(frenfrencm, len(FXT))
+print('Accuracy of french images from french model output 1:')
 print_accuracy(frenfrencm_1, len(FXT))
+print('Accuracy of mixed images from french model output 0:')
 print_accuracy(frenmixcm, len(MXT))
+print('Accuracy of mixed images from french model output 1:')
 print_accuracy(frenmixcm, len(MXT))
+
+
+
+#########################################
+########### REAL IMAGES #################
 
 chin_on_from_chin = []
 chin_on_from_fren = []
@@ -310,78 +343,71 @@ fren_off_from_fren = []
 start = time.time()
 print('OUT 0')
 for i in chinese_on:
-    res = chin_rmodel.evaluate_image(i,0)
+    res = chin_rmodel.evaluate_image(i,0,1)
     #print(res)
     chin_on_from_chin.append(res)  
-    res = fren_rmodel.evaluate_image(i,0)
+    res = fren_rmodel.evaluate_image(i,0,1)
     #print(res)   
     chin_on_from_fren.append(res)  
 for i in chinese_off:
-    res = chin_rmodel.evaluate_image(i,0)
+    res = chin_rmodel.evaluate_image(i,0,0)
     #print(res)
     chin_off_from_chin.append(res) 
-    res = fren_rmodel.evaluate_image(i,0)
+    res = fren_rmodel.evaluate_image(i,0,0)
     #print(res)
     chin_off_from_fren.append(res)     
 
 for i in french_on:
-    res = chin_rmodel.evaluate_image(i,0)
+    res = chin_rmodel.evaluate_image(i,0,1)
     #print(res)
     fren_on_from_chin.append(res) 
-    res = fren_rmodel.evaluate_image(i,0)
+    res = fren_rmodel.evaluate_image(i,0,1)
     #print(res)
     fren_on_from_fren.append(res) 
 for i in french_off:
-    res = chin_rmodel.evaluate_image(i,0)
+    res = chin_rmodel.evaluate_image(i,0,0)
     #print(res)
     fren_off_from_chin.append(res)
-    res = fren_rmodel.evaluate_image(i,0)
+    res = fren_rmodel.evaluate_image(i,0,0)
     #print(res)
     fren_off_from_fren.append(res) 
 
-print('chin_on_from_chin')
-per_list = 0
-for i in chin_on_from_chin:
-    per_list = per_list + i
-print(per_list)
-print('chin_on_from_fren')
-per_list = 0
-for i in chin_on_from_fren:
-    per_list = per_list + i
-print(per_list)
-print('chin_off_from_chin')
-per_list = 0
-for i in chin_off_from_chin:
-    per_list = per_list + i
-print(per_list)
-print('chin_off_from_fren')
-per_list = 0
-for i in chin_off_from_fren:
-    per_list = per_list + i
-print(per_list)
-print('fren_on_from_chin')
-per_list = 0
-for i in fren_on_from_chin:
-    per_list = per_list + i
-print(per_list)
-print('fren_on_from_fren')
-per_list = 0
-for i in fren_on_from_fren:
-    per_list = per_list + i
-print(per_list)
-print('fren_off_from_chin')
-per_list = 0
-for i in fren_off_from_chin:
-    per_list = per_list + i
-print(per_list)
-print('fren_off_from_fren')
-per_list = 0
-for i in fren_off_from_fren:
-    per_list = per_list + i
-print(per_list)
 
+
+##########################################################
+################## CONFUSION MATRICES ###################
+
+y_pred = chin_on_from_chin + chin_off_from_chin 
+y_true = list(np.ones(len(chin_on_from_chin))) +  list(np.zeros(len(chin_off_from_chin)))
+chinchincm = confusion_matrix(y_true, y_pred)
+
+y_pred = fren_on_from_chin + fren_off_from_chin
+y_true =  list(np.ones(len(fren_on_from_chin))) +  list(np.zeros(len(fren_off_from_chin)))
+chinfrencm = confusion_matrix(y_true, y_pred)
+
+y_pred = chin_on_from_fren + chin_off_from_fren
+y_true = list(np.ones(len(chin_on_from_fren))) + list(np.zeros(len(chin_off_from_fren)))
+frenchincm = confusion_matrix(y_true, y_pred)
+
+y_pred = fren_on_from_fren + fren_off_from_fren
+y_true = list(np.ones(len(fren_on_from_fren))) +  list(np.zeros(len(fren_off_from_fren)))
+frenfrencm = confusion_matrix(y_true, y_pred)
+
+############################################################
+################ PRINT RESULTS ###########################
+
+print('Accuracy of chinese images from chinese model output 0:')
+print_accuracy(chinchincm, len(y_pred))
+print('Accuracy of french images from chinese model output 0:')
+print_accuracy(chinfrencm, len(y_pred))
+print('Accuracy of chinese images from french model output 0:')
+print_accuracy(frenchincm, len(y_pred))
+print('Accuracy of french images from french model output 0:')
+print_accuracy(frenfrencm, len(y_pred))
+
+##########################################################
+################### OUT 1 ##############################
 print('OUT 1')
-
 chin_on_from_chin = []
 chin_on_from_fren = []
 chin_off_from_chin = []
@@ -393,87 +419,68 @@ fren_off_from_chin = []
 fren_off_from_fren = []
 
 for i in chinese_on:
-    res = chin_rmodel.evaluate_image(i,1)
+    res = chin_rmodel.evaluate_image(i,1,1)
     #print(res)
     chin_on_from_chin.append(res)  
-    res = fren_rmodel.evaluate_image(i,1)
+    res = fren_rmodel.evaluate_image(i,1,1)
     #print(res)   
     chin_on_from_fren.append(res)  
 for i in chinese_off:
-    res = chin_rmodel.evaluate_image(i,1)
+    res = chin_rmodel.evaluate_image(i,1,0)
     #print(res)
     chin_off_from_chin.append(res) 
-    res = fren_rmodel.evaluate_image(i,1)
+    res = fren_rmodel.evaluate_image(i,1,0)
     #print(res)
     chin_off_from_fren.append(res)   
 
 for i in french_on:
-    res = chin_rmodel.evaluate_image(i,1)
+    res = chin_rmodel.evaluate_image(i,1,1)
     #print(res)
     fren_on_from_chin.append(res) 
-    res = fren_rmodel.evaluate_image(i,1)
+    res = fren_rmodel.evaluate_image(i,1,1)
     #print(res)
     fren_on_from_fren.append(res) 
 for i in french_off:
-    res = chin_rmodel.evaluate_image(i,1)
+    res = chin_rmodel.evaluate_image(i,1,0)
     #print(res)
     fren_off_from_chin.append(res)
-    res = fren_rmodel.evaluate_image(i,1)
+    res = fren_rmodel.evaluate_image(i,1,0)
     #print(res)
     fren_off_from_fren.append(res) 
 
+##########################################################
+################## CONFUSION MATRICES ###################
 
+y_pred = chin_on_from_chin + chin_off_from_chin 
+y_true = list(np.ones(len(chin_on_from_chin))) + list(np.zeros(len(chin_off_from_chin)))
+chinchincm = confusion_matrix(y_true, y_pred)
 
+y_pred = fren_on_from_chin + fren_off_from_chin
+y_true =  list(np.ones(len(fren_on_from_chin))) +  list(np.zeros(len(fren_off_from_chin)))
+chinfrencm = confusion_matrix(y_true, y_pred)
 
-'''print(chin_on_from_chin)
-print(chin_on_from_fren)
-print(chin_off_from_chin)
-print(chin_off_from_fren)
+y_pred = chin_on_from_fren + chin_off_from_fren
+y_true = list(np.ones(len(chin_on_from_fren))) + list(np.zeros(len(chin_off_from_fren)))
+frenchincm = confusion_matrix(y_true, y_pred)
 
-print(fren_on_from_chin)
-print(fren_on_from_fren)
-print(fren_off_from_chin)
-print(fren_off_from_fren)'''
-print('chin_on_from_chin')
-per_list = 0
-for i in chin_on_from_chin:
-    per_list = per_list + i
-print(per_list)
-print('chin_on_from_fren')
-per_list = 0
-for i in chin_on_from_fren:
-    per_list = per_list + i
-print(per_list)
-print('chin_off_from_chin')
-per_list = 0
-for i in chin_off_from_chin:
-    per_list = per_list + i
-print(per_list)
-print('chin_off_from_fren')
-per_list = 0
-for i in chin_off_from_fren:
-    per_list = per_list + i
-print(per_list)
-print('fren_on_from_chin')
-per_list = 0
-for i in fren_on_from_chin:
-    per_list = per_list + i
-print(per_list)
-print('fren_on_from_fren')
-per_list = 0
-for i in fren_on_from_fren:
-    per_list = per_list + i
-print(per_list)
-print('fren_off_from_chin')
-per_list = 0
-for i in fren_off_from_chin:
-    per_list = per_list + i
-print(per_list)
-print('fren_off_from_fren')
-per_list = 0
-for i in fren_off_from_fren:
-    per_list = per_list + i
-print(per_list)
+y_pred = fren_on_from_fren + fren_off_from_fren
+y_true = list(np.ones(len(fren_on_from_fren))) +  list(np.zeros(len(fren_off_from_fren)))
+frenfrencm = confusion_matrix(y_true, y_pred)
+
+############################################################
+##################### PRINT RESULTS ########################
+print('Accuracy of chinese images from chinese model output 1:')
+print_accuracy(chinchincm, len(y_pred))
+print('Accuracy of french images from chinese model output 1:')
+print_accuracy(chinfrencm, len(y_pred))
+
+print('Accuracy of chinese images from french model output 1:')
+print_accuracy(frenchincm, len(y_pred))
+print('Accuracy of french images from french model output 1:')
+print_accuracy(frenfrencm, len(y_pred))
+
+##########################################################
+
 
 end = time.time()
 print('Time is:', str(end-start))

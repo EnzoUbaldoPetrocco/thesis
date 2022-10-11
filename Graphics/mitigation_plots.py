@@ -66,17 +66,17 @@ french_mitigation.plot_together()
 
 ###########################################
 ## First metric: OPTIMAL LAMBDA IS MINORITY CLASS MAX
-title = "Difference between Lambda=0 and Lambda*"
+title = "Difference between Lambda=0 and Lambda*=max(minority class)= "
 #### CHINESE #####
 max_value = max(chinese_data['lambda']['Accuracy_second'])
 max_index = chinese_data['lambda']['Accuracy_second'].index(max_value)
-chinese_labels = ["Lambda 0 Chinese", "Lambda 0 French", "Lambda " + str(x[max_index])[0:4] + " Chinese", "Lambda " + str(x[max_index])[0:4]  + "French"]
+chinese_labels = ["Lambda 0 Chinese", "Lambda 0 French", "Lambda Grid " + str(max_index) + " Chinese", "Lambda Grid " + str(max_index)  + " French"]
 chinese_hist = Histograms(chinese_labels, [chinese_data['lambda0']['Accuracy_main'], chinese_data['lambda0']['Accuracy_second'], 
-chinese_data['lambda']['Accuracy_main'][max_index], chinese_data['lambda']['Accuracy_second'][max_index]],'Accuracy',title=title )
+chinese_data['lambda']['Accuracy_main'][max_index], chinese_data['lambda']['Accuracy_second'][max_index]],'Accuracy',title=title + str(x[max_index])[0:4] )
 #### FRENCH #####
 max_value = max(french_data['lambda']['Accuracy_second'])
 max_index = french_data['lambda']['Accuracy_second'].index(max_value)
-french_labels = ["Lambda 0 Chinese", "Lambda 0 French", "Lambda " + str(x[max_index])[0:4] + " Chinese", "Lambda " + str(x[max_index])[0:4]  + "French"]
+french_labels = ["Lambda 0 Chinese", "Lambda 0 French", "Lambda " + str(max_index) + " Chinese", "Lambda " + str(max_index) + " French"]
 french_hist = Histograms(french_labels, [french_data['lambda0']['Accuracy_second'], french_data['lambda0']['Accuracy_main'], 
 french_data['lambda']['Accuracy_second'][max_index], french_data['lambda']['Accuracy_main'][max_index]],'Accuracy', title=title )
 
@@ -84,7 +84,7 @@ chinese_hist.plot()
 french_hist.plot()
 
 ## Second metric: OPTIMAL LAMBDA IS OPTIMAL VALUE OF (x+y)/2
-
+title = "Difference between Lambda=0 and Lambda*=max(minority+majority)/2= "
 #### CHINESE ####
 chin_func = []
 for i in range(0,len(chinese_data['lambda']['Accuracy_main'])):
@@ -92,9 +92,9 @@ for i in range(0,len(chinese_data['lambda']['Accuracy_main'])):
     chin_func.append(k)
 max_value = max(chin_func)
 max_index = chin_func.index(max_value)
-chinese_labels = ["Lambda 0 Chinese", "Lambda 0 French", "Lambda " + str(x[max_index])[0:4] + " Chinese", "Lambda " + str(x[max_index])[0:4]  + "French"]
+chinese_labels = ["Lambda 0 Chinese", "Lambda 0 French", "Lambda Grid " + str(max_index) + " Chinese", "Lambda Grid " + str(max_index)  + " French"]
 chinese_hist = Histograms(chinese_labels, [chinese_data['lambda0']['Accuracy_main'], chinese_data['lambda0']['Accuracy_second'], 
-chinese_data['lambda']['Accuracy_main'][max_index], chinese_data['lambda']['Accuracy_second'][max_index]],'Accuracy',title=title )
+chinese_data['lambda']['Accuracy_main'][max_index], chinese_data['lambda']['Accuracy_second'][max_index]],'Accuracy',title=title +str(x[max_index])[0:4] )
 #### FRENCH #####
 
 #### FRENCH ####
@@ -104,7 +104,7 @@ for i in range(0,len(french_data['lambda']['Accuracy_main'])):
     fren_func.append(k)
 max_value = max(fren_func)
 max_index = fren_func.index(max_value)
-french_labels = ["Lambda 0 Chinese", "Lambda 0 French", "Lambda " + str(x[max_index])[0:4] + " Chinese", "Lambda " + str(x[max_index])[0:4]  + "French"]
+french_labels = ["Lambda 0 Chinese", "Lambda 0 French", "Lambda Grid " + str(max_index) + " Chinese", "Lambda Grid " + str(max_index)  + " French"]
 french_hist = Histograms(french_labels, [french_data['lambda0']['Accuracy_second'], french_data['lambda0']['Accuracy_main'], 
 french_data['lambda']['Accuracy_second'][max_index], french_data['lambda']['Accuracy_main'][max_index]],'Accuracy', title=title )
 

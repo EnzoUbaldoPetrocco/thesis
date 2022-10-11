@@ -157,6 +157,7 @@ class ImagesToData:
     self.mix_list(self.chinese_on)
     self.mix_list(self.french_off)
     self.mix_list(self.french_on)
+    
 
     self.divide_ds_FE()
 
@@ -171,7 +172,7 @@ class ImagesToData:
     
 
   def divide_ds_FE(self):
-    self.prop = 1/2
+    self.prop = 1/1.2
     base_path = '../../' + working_directory +'/'
     #self.delete_folder_content('../../' + working_directory + '/')
     
@@ -210,6 +211,10 @@ class ImagesToData:
     self.save_images(chinese_on, base_path  + '/chinese/'+ 'accese')
     self.save_images(french_off, base_path + '/french/' + 'spente')
     self.save_images(french_on, base_path  + '/french/'+ 'accese')
+    print(numpy.shape(chinese_off))
+    print(numpy.shape(chinese_on))
+    print(numpy.shape(french_off))
+    print(numpy.shape(french_on))
 
     '''self.save_images(chinese_off, base_path  + '/spente/'+ 'chinese')
     self.save_images(chinese_on, base_path  + '/accese/'+ 'chinese')
