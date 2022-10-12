@@ -3,7 +3,6 @@
 from turtle import width
 import zipfile
 import pathlib
-from httplib2 import FailedToDecompressContent
 import numpy
 from skimage.color import rgb2gray
 import cv2
@@ -215,12 +214,12 @@ class ImagesToData:
 
     self.MFX = list(self.FX)
     self.MFY = list(self.FY)
-    for i in range(25):
+    for i in range(int(len(self.CX)/10)):
       index = random.randint(0,len(self.FX)-11)
       self.MCX.append(self.FX[index])
       self.MCY.append(self.FY[index])
 
-    for i in range(25):
+    for i in range(int(len(self.FX)/10)):
       index = random.randint(0,len(self.FX)-11)
       self.MFX.append(self.CX[index])
       self.MFY.append(self.CY[index])
