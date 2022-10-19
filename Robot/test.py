@@ -40,8 +40,8 @@ lambda_grid = [1.00000000e-02, 1.46779927e-02, 2.15443469e-02,  3.16227766e-02,
         4.64158883e+00, 6.81292069e+00, 1.00000000e+01, 1.46779927e+01,
         2.15443469e+01, 3.16227766e+01, 4.64158883e+01, 6.81292069e+01,
         1.00000000e+02]
-lamb =  lambda_grid[6]
-n_images = 250
+lamb =  lambda_grid[18]
+n_images = 50
 chinese_on = get_images("../../TEST/chinese_on", n_images=n_images)
 chinese_off = get_images("../../TEST/chinese_off", n_images=n_images)
 french_on = get_images("../../TEST/french_on", n_images=n_images)
