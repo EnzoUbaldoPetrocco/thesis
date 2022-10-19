@@ -1,41 +1,43 @@
 #! /usr/bin/env python3
 import re
+from pathlib import Path
 from tkinter import W
-import manipulating_images_better
-import numpy as np
-from tensorflow.keras.applications.resnet50 import ResNet50
-from tensorflow.keras.applications.vgg16 import VGG16
-from tensorflow.keras.applications.vgg19 import VGG19
-from tensorflow.keras.applications.xception import Xception
-from tensorflow.keras.applications.inception_v3 import InceptionV3
-from tensorflow.keras.applications.inception_resnet_v2 import InceptionResNetV2
-from tensorflow.keras.preprocessing import image
-from tensorflow.keras.applications.vgg16 import preprocess_input
+
 import cv2
-from keras.preprocessing.image import ImageDataGenerator
-from keras import layers, models, Model, optimizers
-from keras.callbacks import ReduceLROnPlateau, ModelCheckpoint, EarlyStopping
-import tensorflow as tf
-from skimage.color import gray2rgb
-from matplotlib import pyplot as plt
-from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Dense
 import keras.layers as L
-from keras.layers import Input, Lambda, Dense, Flatten,Dropout, MaxPooling3D
+import numpy as np
+import tensorflow as tf
+from keras import Model
+from keras import backend as K
+from keras import layers, models, optimizers
+from keras.callbacks import (EarlyStopping, LambdaCallback, ModelCheckpoint,
+                             ReduceLROnPlateau)
+from keras.layers import Dense, Dropout, Flatten, Input, Lambda, MaxPooling3D
 from keras.models import Sequential
-from tensorflow.keras.applications.efficientnet_v2 import EfficientNetV2S
+from keras.preprocessing.image import ImageDataGenerator
+from matplotlib import pyplot as plt
+from skimage.color import gray2rgb
+from sklearn.utils import shuffle
 from tensorflow.keras.applications import efficientnet
 from tensorflow.keras.applications.efficientnet import EfficientNetB3
-from keras import backend as K
-from pathlib import Path
-from sklearn.utils import shuffle
-from keras.callbacks import LambdaCallback
+from tensorflow.keras.applications.efficientnet_v2 import EfficientNetV2S
+from tensorflow.keras.applications.inception_resnet_v2 import InceptionResNetV2
+from tensorflow.keras.applications.inception_v3 import InceptionV3
+from tensorflow.keras.applications.resnet50 import ResNet50
+from tensorflow.keras.applications.vgg16 import VGG16, preprocess_input
+from tensorflow.keras.applications.vgg19 import VGG19
+from tensorflow.keras.applications.xception import Xception
+from tensorflow.keras.layers import Dense
+from tensorflow.keras.models import Model
+from tensorflow.keras.preprocessing import image
+
+import manipulating_images_better
 
 '''config = tf.compat.v1.ConfigProto()
 config.gpu_options.allow_growth = True
 session = tf.compat.v1.Session(config=config)'''
-import torch
 import pandas as pd
+import torch
 
 working_directory = 'MITIGATION'
 weight1 = 0

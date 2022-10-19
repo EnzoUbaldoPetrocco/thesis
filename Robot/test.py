@@ -8,6 +8,7 @@ import time
 import numpy as np
 from tensorflow.keras.preprocessing import image
 from sklearn.metrics import confusion_matrix
+from matplotlib import pyplot as plt
 
 def get_images(path, n_images):
     images = []
@@ -39,7 +40,7 @@ lambda_grid = [1.00000000e-02, 1.46779927e-02, 2.15443469e-02,  3.16227766e-02,
         4.64158883e+00, 6.81292069e+00, 1.00000000e+01, 1.46779927e+01,
         2.15443469e+01, 3.16227766e+01, 4.64158883e+01, 6.81292069e+01,
         1.00000000e+02]
-lamb =  0 #lambda_grid[18]
+lamb =  lambda_grid[6]
 n_images = 250
 chinese_on = get_images("../../TEST/chinese_on", n_images=n_images)
 chinese_off = get_images("../../TEST/chinese_off", n_images=n_images)
@@ -484,3 +485,9 @@ print_accuracy(frenfrencm, len(y_pred))
 
 end = time.time()
 print('Time is:', str(end-start))
+
+#############################
+## ALERT ###################
+plt.figure()
+plt.imshow(np.reshape(CXT[0], (chin_rmodel.itd.size, chin_rmodel.itd.size)))
+plt.show()

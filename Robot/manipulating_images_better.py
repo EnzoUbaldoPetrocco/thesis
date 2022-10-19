@@ -211,10 +211,11 @@ class ImagesToData:
     self.save_images(chinese_on, base_path  + '/chinese/'+ 'accese')
     self.save_images(french_off, base_path + '/french/' + 'spente')
     self.save_images(french_on, base_path  + '/french/'+ 'accese')
-    print(numpy.shape(chinese_off))
-    print(numpy.shape(chinese_on))
-    print(numpy.shape(french_off))
-    print(numpy.shape(french_on))
+
+    self.chinese_off = self.chinese_off[int(len(self.chinese_off)*self.prop):len(self.chinese_off)-1]
+    self.chinese_on = self.chinese_on[int(len(self.chinese_on)*self.prop):len(self.chinese_on)-1]
+    self.french_off = self.french_off[int(len(self.french_off)*self.prop):len(self.french_off)-1]
+    self.french_on = self.french_off[int(len(self.french_off)*self.prop):len(self.french_on)-1]
 
     '''self.save_images(chinese_off, base_path  + '/spente/'+ 'chinese')
     self.save_images(chinese_on, base_path  + '/accese/'+ 'chinese')

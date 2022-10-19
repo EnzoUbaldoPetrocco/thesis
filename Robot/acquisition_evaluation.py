@@ -77,9 +77,10 @@ class RModel:
             if not isinstance(layer, layers.BatchNormalization):
                 layer.trainable = True
 
-        learning_rate= 4e-4
+        learning_rate= 5e-4
         adam = optimizers.Adam(learning_rate)
         optimizer = adam
+        
         if ds_selection == "chinese":
             self.model.compile(loss=[self.custom_loss_w2, self.custom_loss_w1], optimizer=optimizer, metrics=["accuracy"],  loss_weights=[1,1])
         if ds_selection == "french":

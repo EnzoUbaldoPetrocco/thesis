@@ -8,7 +8,7 @@ lambda_grid = [1.00000000e-02, 1.46779927e-02, 2.15443469e-02,  3.16227766e-02,
         4.64158883e+00, 6.81292069e+00, 1.00000000e+01, 1.46779927e+01,
         2.15443469e+01, 3.16227766e+01, 4.64158883e+01, 6.81292069e+01,
         1.00000000e+02]
-lamb =  lambda_grid[23]
+lamb =  lambda_grid[8]
 
 chinese_model = FeatureExtractor("chinese", lamb=lamb)
 french_model = FeatureExtractor("french", lamb=lamb)
