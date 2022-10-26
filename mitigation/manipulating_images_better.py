@@ -19,7 +19,7 @@ import os, shutil
 
 
 working_directory = 'MITIGATION'
-size = 75
+size = 100
 total_n_images = 469
 
 class ImagesToData:
