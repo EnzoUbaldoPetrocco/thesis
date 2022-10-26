@@ -53,7 +53,7 @@ class RFCClassificator:
                 rfc=RandomForestClassifier(random_state=42)
                 logspace_n_estimators = []
                 logspace_max_depth = []
-                for i in np.logspace(0,2,35):
+                for i in np.logspace(0,2,30):
                         logspace_max_depth.append(int(i))
                 for i in np.logspace(0,3,50):
                     logspace_n_estimators.append(int(i))

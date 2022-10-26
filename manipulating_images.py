@@ -3,7 +3,6 @@
 from turtle import width
 import zipfile
 import pathlib
-from httplib2 import FailedToDecompressContent
 import numpy
 from skimage.color import rgb2gray
 import cv2
@@ -12,13 +11,25 @@ import math
 import pandas as pd
 import random
 import time
-import os
+import os, shutil
 from PIL import Image
+from torch import randint
 
-size = 42
-n_images = 400
+size = 128
+total_n_images = 470
 
 class ImagesToData:
+
+  def delete_folder_content(self, folder):
+    for filename in os.listdir(folder):
+        file_path = os.path.join(folder, filename)
+        try:
+            if os.path.isfile(file_path) or os.path.islink(file_path):
+                os.unlink(file_path)
+            elif os.path.isdir(file_path):
+                shutil.rmtree(file_path)
+        except Exception as e:
+            print('Failed to delete %s. Reason: %s' % (file_path, e))
 
   def get_dimensions(self,height, width):
     list_size = []
@@ -44,6 +55,9 @@ class ImagesToData:
         plt.show()
       dimensions = im.shape
     return im
+
+  def created_dir(self, dir):
+    os.mkdir(dir)
 
   def create_directories(self):
     size_path = '../' + str(self.size)
@@ -93,7 +107,7 @@ class ImagesToData:
     return images
 
   def save_images(self, list, path):
-    for i in range(n_images):
+    for i in range(len(list)):
       im = numpy.reshape(list[i], (self.size,self.size))
       im = Image.fromarray(numpy.uint8(im*255))
       im.save(path + '/im' + str(i) + '.jpeg')
@@ -106,19 +120,20 @@ class ImagesToData:
       list.append(temp)
     return list
 
+
   def initial_routine(self, create_directory):
     file_name = "../accese vs spente.zip"
   # opening the zip file in READ mode
-    with zipfile.ZipFile(file_name, 'r') as zip:
+    '''with zipfile.ZipFile(file_name, 'r') as zip:
       zip.extractall('../')
-      print('Done!')
+      print('Done!')'''
     if create_directory:
       self.create_directories()
     random.seed(time.time_ns())
-    self.chinese_off = self.acquire_modify_images('../accese vs spente/cinesi/')
-    self.chinese_on = self.acquire_modify_images('../accese vs spente/cinesi accese/')
-    self.french_off = self.acquire_modify_images('../accese vs spente/francesi/')
-    self.french_on = self.acquire_modify_images('../accese vs spente/francesi accese/')
+    self.chinese_off = self.acquire_modify_images('../accese vs spente/cinesi')
+    self.chinese_on = self.acquire_modify_images('../accese vs spente/cinesi accese')
+    self.french_off = self.acquire_modify_images('../accese vs spente/francesi')
+    self.french_on = self.acquire_modify_images('../accese vs spente/francesi accese')
     self.chinese_off = self.mix_list(self.chinese_off)
     self.chinese_on = self.mix_list(self.chinese_on)
     self.french_off = self.mix_list(self.french_off)
@@ -139,7 +154,7 @@ class ImagesToData:
     self.french_categories = numpy.concatenate(((numpy.ones(len(french_off))*(-1)), numpy.ones(len(french_on))))
     random.seed(time.time_ns())
     self.mix()
-    self.mix_mixed_ds()
+    self.prepare_ds()
 
   def mix(self):
     self.chinese = list(self.chinese)
@@ -169,24 +184,68 @@ class ImagesToData:
     self.french = numpy.array(self.french)
     self.french_categories = numpy.array(self.french_categories)
 
-  def mix_mixed_ds(self):
+  def prepare_ds(self):
 
-    self.mixed = numpy.concatenate((self.chinese, self.french), axis=0)
-    self.mixed_categories = numpy.concatenate((self.chinese_categories, self.french_categories), axis = 0)
+    self.chinese = list(self.chinese)
+    self.french = list(self.french)
+    self.chinese_categories = list(self.chinese_categories)
+    self.french_categories = list(self.french_categories)
+    
 
-    self.mixed = list(self.mixed)
-    self.mixed_categories = list(self.mixed_categories)
-    for i in range(9999999):
-      index = random.randint(0,len(self.mixed)-1)
-      temp_mix = self.mixed[index]
-      temp_mix_cat = self.mixed_categories[index]
-      self.mixed.pop(index)
-      self.mixed.append(temp_mix)
-      self.mixed_categories.pop(index)
-      self.mixed_categories.append(temp_mix_cat)
+    self.CX = self.chinese[0 : 2*252]
+    self.CY = self.chinese_categories[0 : 2*252]
+    self.CXT  = self.chinese[2*253-1 : 2*360]
+    self.CYT = self.chinese_categories[2*253-1 : 2*360]
+    self.MXT = self.chinese[2*361-1 : 2*469]
+    self.MYT = self.chinese_categories[2*361-1 : 2*469]
 
-    self.mixed = numpy.array(self.mixed)
-    self.mixed_categories = numpy.array(self.mixed_categories)
+
+    self.FX = self.french[0 : 2*252]
+    self.FY = self.french_categories[0 : 2*252]
+    self.FXT  = self.french[2*253-1 : 2*360]
+    self.FYT = self.french_categories[2*253-1 : 2*360]
+    self.MXT = numpy.concatenate((self.MXT, self.french[2*361-1 : 2*469]), axis = 0)
+    self.MYT = numpy.concatenate((self.MYT, self.french_categories[2*361-1 : 2*469]), axis = 0)
+    self.MX = numpy.concatenate((self.CX, self.FX), axis=0)
+    self.MY = numpy.concatenate((self.CY, self.FY), axis=0)
+
+    self.CX = numpy.array(self.CX)
+    self.CY = numpy.array(self.CY)
+    self.CXT = numpy.array(self.CXT)
+    self.CYT = numpy.array(self.CYT)
+
+    self.FX = numpy.array(self.FX)
+    self.FY = numpy.array(self.FY)
+    self.FXT = numpy.array(self.FXT)
+    self.FYT = numpy.array(self.FYT)
+    
+    self.MX = numpy.array(self.MX)
+    self.MY = numpy.array(self.MY)
+    self.MXT = numpy.array(self.MXT)
+    self.MYT = numpy.array(self.MYT)
+
+  def little_mix(self):
+    self.MCX = self.CX
+    self.MCY = self.CY
+
+    self.MFX = self.FX
+    self.MFY = self.FY
+
+    for i in range(10):
+      index = random.randint(0,len(self.chinese)-1)
+      self.MCX.append(self.FX[index])
+      self.MCY.append(self.FY[index])
+
+    for i in range(10):
+      index = random.randint(0,len(self.chinese)-1)
+      self.MFX.append(self.CX[index])
+      self.MFY.append(self.CY[index])
+
+    
+
+
+    
+
 
   def __init__(self, initialize = False, create_directory = False):
     
@@ -203,5 +262,5 @@ class ImagesToData:
     
 
 
-itd = ImagesToData(False, True)
+itd = ImagesToData(True, True)
 #itd.initial_routine()
