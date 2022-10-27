@@ -1,11 +1,9 @@
 #! /usr/bin/env python3
 
-import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.svm import SVC
 from sklearn.model_selection import GridSearchCV
-from torch import logspace
 from FeatureExtractor_ResNet50 import FeatureExtractor
 from math import floor
 from sklearn.metrics import confusion_matrix
@@ -13,9 +11,7 @@ import tensorflow as tf
 '''config = tf.compat.v1.ConfigProto()
 config.gpu_options.allow_growth = True
 session = tf.compat.v1.Session(config=config)'''
-import torch
-import os
-import gc 
+ 
 #os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 #CUDA_VISIBLE_DEVICES=""
 #os.environ['CUDA_VISIBLE_DEVICES'] = '-1'

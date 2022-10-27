@@ -1,6 +1,5 @@
 #! /usr/bin/env python3
 
-from turtle import width
 import zipfile
 import pathlib
 import numpy
@@ -13,7 +12,6 @@ import random
 import time
 import os
 from PIL import Image
-from torch import randint
 
 size = 33
 total_n_images = 470

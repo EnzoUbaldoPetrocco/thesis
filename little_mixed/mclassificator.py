@@ -1,14 +1,10 @@
 #! /usr/bin/env python3
 
-import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn import preprocessing
 from sklearn.svm import SVC
 from sklearn.model_selection import GridSearchCV
-from torch import logspace
 import manipulating_images_better
-from math import floor
 from sklearn.metrics import confusion_matrix
 
 class SVCClassificator:

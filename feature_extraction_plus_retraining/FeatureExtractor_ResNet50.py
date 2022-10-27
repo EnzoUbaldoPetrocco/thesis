@@ -1,38 +1,21 @@
 #! /usr/bin/env python3
-from audioop import rms
-from re import I
-from unicodedata import name
+
 import manipulating_images_better
 import numpy as np
 from tensorflow.keras.applications.resnet50 import ResNet50
-from tensorflow.keras.applications.vgg16 import VGG16
-from tensorflow.keras.applications.vgg19 import VGG19
-from tensorflow.keras.applications.xception import Xception
-from tensorflow.keras.applications.inception_v3 import InceptionV3
-from tensorflow.keras.applications.inception_resnet_v2 import InceptionResNetV2
 from tensorflow.keras.preprocessing import image
-from tensorflow.keras.applications.vgg16 import preprocess_input
 import cv2
 from keras.preprocessing.image import ImageDataGenerator
-from keras import layers, models, Model, optimizers
-from keras.callbacks import ReduceLROnPlateau, ModelCheckpoint, EarlyStopping
+from keras import layers, optimizers
+from keras.callbacks import ReduceLROnPlateau, EarlyStopping
 import tensorflow as tf
-from skimage.color import gray2rgb
 from matplotlib import pyplot as plt
-from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Dense
-import keras.layers as L
-from keras.layers import Input, Lambda, Dense, Flatten,Dropout, MaxPooling3D
-from keras.models import Sequential
-from tensorflow.keras.applications.efficientnet_v2 import EfficientNetV2S
-from tensorflow.keras.applications import efficientnet
-from tensorflow.keras.applications.efficientnet import EfficientNetB3
-from keras import backend as K
+from keras.layers import Dense, Flatten
 '''config = tf.compat.v1.ConfigProto()
 config.gpu_options.allow_growth = True
 session = tf.compat.v1.Session(config=config)'''
 import torch
-import os
 
 
 BATCH_SIZE = 1
