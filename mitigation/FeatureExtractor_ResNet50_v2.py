@@ -3,7 +3,6 @@
 from pathlib import Path
 
 import cv2
-import keras.layers as L
 import numpy as np
 import tensorflow as tf
 from keras import Model
@@ -11,7 +10,6 @@ from keras import layers, models, optimizers
 from keras.callbacks import (EarlyStopping,
                              ReduceLROnPlateau)
 from keras.layers import Dense, Flatten, Input
-from keras.models import Sequential
 from keras.preprocessing.image import ImageDataGenerator
 from matplotlib import pyplot as plt
 from sklearn.utils import shuffle

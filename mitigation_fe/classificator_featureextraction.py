@@ -1,20 +1,12 @@
 #! /usr/bin/env python3
 
-import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.svm import SVC
 from sklearn.model_selection import GridSearchCV
-from torch import logspace
 from FeatureExtractor_ResNet50 import FeatureExtractor
-from math import floor
 from sklearn.metrics import confusion_matrix
 import tensorflow as tf
-import torch
-from tensorflow.keras.models import Model
-import cv2
-from tensorflow.keras.preprocessing import image
-import os
 #os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 class SVCClassificator:
 
