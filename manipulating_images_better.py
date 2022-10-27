@@ -13,7 +13,6 @@ import random
 import time
 import os, shutil
 from PIL import Image
-from torch import randint
 
 size = 33
 total_n_images = 470
