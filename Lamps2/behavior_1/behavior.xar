@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8" ?><ChoregrapheProject xmlns="http://www.aldebaran-robotics.com/schema/choregraphe/project.xsd" xar_version="3"><Box name="root" id="-1" localization="8" tooltip="Root box of Choregraphe&apos;s behavior. Highest level possible." x="0" y="0"><bitmap>media/images/box/root.png</bitmap><script language="4"><content><![CDATA[]]></content></script><Input name="onLoad" type="1" type_size="1" nature="0" inner="1" tooltip="Signal sent when diagram is loaded." id="1" /><Input name="onStart" type="1" type_size="1" nature="2" inner="0" tooltip="Box behavior starts when a signal is received on this input." id="2" /><Input name="onStop" type="1" type_size="1" nature="3" inner="0" tooltip="Box behavior stops when a signal is received on this input." id="3" /><Output name="onStopped" type="1" type_size="1" nature="1" inner="0" tooltip="Signal sent when box behavior is finished." id="4" /><Timeline enable="0"><BehaviorLayer name="behavior_layer1"><BehaviorKeyframe name="keyframe1" index="1"><Diagram><Box name="Lamps" id="1" localization="8" tooltip="This Python Script simply makes Pepper walk in a square and asks to a server if the lamp is on or off&#x0A;" x="457" y="68"><bitmap>media/images/box/box-python-script.png</bitmap><script language="4"><content><![CDATA[import os
+import qi
+import argparse
+import time
+import naoqi
+from naoqi import ALProxy
+import sys
+import json
+reload(sys)
+app_name = "lamps"
+sys.path.append("/data/home/nao/.local/share/PackageManager/apps/" + app_name + "/libs/")
+sys.path.append("/data/home/nao/.local/share/PackageManager/apps/" + app_name + "/")
+import cv2
+import requests
+import numpy as np, cv
+import base64
+import almath
+
+class MyClass(GeneratedClass):
+    def __init__(self):
+        GeneratedClass.__init__(self)
+        #session = qi.Session()
+        self.path = ALFrameManager.getBehaviorPath(self.behaviorId)
+        self.motion = self.session().service('ALMotion')
+        #self.photo_capture = self.session().service( "ALPhotoCapture" )
+        self.photo_capture = ALProxy("ALPhotoCapture")
+        self.image_path = self.path
+        server_ip = "130.251.13.104"
+        nome_servizio = "put_image"
+        self.request_uri = "http://" + server_ip + ":5000/" + nome_servizio
+        self.TTS = self.session().service('ALTextToSpeech')
+        self.posture = ALProxy("ALRobotPosture")
+        self.head_joint_name = "HeadPitch"
+        self.hip_joint_name = "HipPitch"
+        self.angle = -15*almath.TO_RAD
+        self.angle_hip = -25*almath.TO_RAD
+        self.moveConfig = [["MaxVelXY", 0.25]]
+        self.photo_capture.setPictureFormat("png")
+        self.aut_life = ALProxy("ALAutonomousLife")
+
+    def onLoad(self):
+        #put initialization code here
+        pass
+
+    def onUnload(self):
+        #put clean-up code here
+        pass
+
+    def onInput_onStart(self):
+        #self.TTS.say("Hi, let's explore the environment")
+        self.aut_life.setState("disabled")
+        for i in range(0,5):
+            self.posture.goToPosture('Stand', 0.2)
+            for i in range(0,4):
+                self.motion.moveTo(0,0,3.14/2,self.moveConfig)
+                self.motion.moveTo(0.3,0,0,self.moveConfig)
+            self.posture.goToPosture('Stand', 0.5)
+            self.motion.angleInterpolation(self.hip_joint_name, self.angle_hip , 1 , True)
+            self.motion.angleInterpolation(self.head_joint_name, self.angle, 1, True)
+            self.photo_capture.takePictures(1, self.image_path, "image")
+            self.posture.goToPosture('Stand', 0.5)
+            image = cv2.imread(self.image_path + "/image.png")
+            size = image.shape
+            image = bytearray(image)
+            image_encoded = base64.b64encode(image)
+            msg = {'image': image_encoded, 'size': size}
+            req = json.dumps(msg)
+            res=requests.put(self.request_uri, data=req, verify=False)
+            sentence = res.json()["sentence"]
+            self.TTS.say(sentence)
+        self.aut_life.setState("interactive")
+        #self.onStopped() #activate the output of the box
+        pass
+
+    def onInput_onStop(self):
+        self.onUnload() #it is recommended to reuse the clean-up as the box is stopped
+        self.onStopped() #activate the output of the box]]></content></script><Input name="onLoad" type="1" type_size="1" nature="0" inner="1" tooltip="Signal sent when diagram is loaded." id="1" /><Input name="onStart" type="1" type_size="1" nature="2" inner="0" tooltip="Box behavior starts when a signal is received on this input." id="2" /><Input name="onStop" type="1" type_size="1" nature="3" inner="0" tooltip="Box behavior stops when a signal is received on this input." id="3" /><Output name="onStopped" type="1" type_size="1" nature="1" inner="0" tooltip="Signal sent when box behavior is finished." id="4" /></Box><Link inputowner="1" indexofinput="2" outputowner="0" indexofoutput="2" /><Link inputowner="0" indexofinput="4" outputowner="1" indexofoutput="4" /></Diagram></BehaviorKeyframe></BehaviorLayer></Timeline></Box></ChoregrapheProject>
