@@ -49,6 +49,7 @@ class RFCClassificator:
 
                 rfc=RandomForestClassifier(random_state=42)
 
+                rfc=RandomForestClassifier(random_state=42)
                 logspace_n_estimators = []
                 logspace_max_depth = []
                 for i in np.logspace(0,2,30):
@@ -56,12 +57,11 @@ class RFCClassificator:
                 for i in np.logspace(0,3,50):
                     logspace_n_estimators.append(int(i))
                 param_grid = { 
-                    'n_estimators': [1000], #logspace_n_estimators,
+                    'n_estimators': [300], #logspace_n_estimators,
                     'max_features': [ 'sqrt', 'log2'],
                     'max_depth' : logspace_max_depth,
                     'criterion' :['gini', 'entropy']
                     }
-                
                 CV_rfc = GridSearchCV(estimator=rfc, param_grid=param_grid, cv= 5)
                 
                 if self.ds_selection == "chinese":
