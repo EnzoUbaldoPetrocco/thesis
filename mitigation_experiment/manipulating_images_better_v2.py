@@ -1,6 +1,5 @@
 #! /usr/bin/env python3
 
-from turtle import width
 import zipfile
 import pathlib
 import numpy
@@ -11,11 +10,15 @@ import math
 import pandas as pd
 import random
 import time
-import os, shutil
+import os
 from PIL import Image
+import os, shutil
 
-size = 224
-total_n_images = 470
+
+
+working_directory = 'MITIGATION'
+size = 75
+total_n_images = 469
 
 class ImagesToData:
 
@@ -119,20 +122,19 @@ class ImagesToData:
       list.append(temp)
     return list
 
-
   def initial_routine(self, create_directory):
     file_name = "../accese vs spente.zip"
   # opening the zip file in READ mode
-    '''with zipfile.ZipFile(file_name, 'r') as zip:
+    with zipfile.ZipFile(file_name, 'r') as zip:
       zip.extractall('../')
-      print('Done!')'''
+      print('Done!')
     if create_directory:
       self.create_directories()
     random.seed(time.time_ns())
-    self.chinese_off = self.acquire_modify_images('../accese vs spente/cinesi')
-    self.chinese_on = self.acquire_modify_images('../accese vs spente/cinesi accese')
-    self.french_off = self.acquire_modify_images('../accese vs spente/francesi')
-    self.french_on = self.acquire_modify_images('../accese vs spente/francesi accese')
+    self.chinese_off = self.acquire_modify_images('../accese vs spente/cinesi/')
+    self.chinese_on = self.acquire_modify_images('../accese vs spente/cinesi accese/')
+    self.french_off = self.acquire_modify_images('../accese vs spente/francesi/')
+    self.french_on = self.acquire_modify_images('../accese vs spente/francesi accese/')
     self.chinese_off = self.mix_list(self.chinese_off)
     self.chinese_on = self.mix_list(self.chinese_on)
     self.french_off = self.mix_list(self.french_off)
@@ -143,17 +145,77 @@ class ImagesToData:
     self.save_images(self.french_on, '../' + str(self.size) + '/francesi accese')
 
   def bf_ml(self):
-    chinese_off = self.acquire_images('../' + str(self.size) + '/cinesi')
-    chinese_on = self.acquire_images('../' + str(self.size) + '/cinesi accese')
-    french_off = self.acquire_images('../' + str(self.size) + '/francesi')
-    french_on = self.acquire_images('../' + str(self.size) + '/francesi accese')
-    self.chinese = numpy.concatenate((chinese_off, chinese_on),axis=0)
-    self.french = numpy.concatenate((french_off, french_on),axis=0)
-    self.chinese_categories = numpy.concatenate(((numpy.ones(len(chinese_off))*(-1)), numpy.ones(len(chinese_on))))
-    self.french_categories = numpy.concatenate(((numpy.ones(len(french_off))*(-1)), numpy.ones(len(french_on))))
+    self.chinese_off = self.acquire_images('../../' + str(self.size) + '/cinesi')
+    self.chinese_on = self.acquire_images('../../' + str(self.size) + '/cinesi accese')
+    self.french_off = self.acquire_images('../../' + str(self.size) + '/francesi')
+    self.french_on = self.acquire_images('../../' + str(self.size) + '/francesi accese')
+    self.mix_list(self.chinese_off)
+    self.mix_list(self.chinese_on)
+    self.mix_list(self.french_off)
+    self.mix_list(self.french_on)
+
+    self.divide_ds_FE()
+
+    self.chinese = numpy.concatenate((self.chinese_off, self.chinese_on),axis=0)
+    self.french = numpy.concatenate((self.french_off, self.french_on),axis=0)
+    self.chinese_categories = numpy.concatenate(((numpy.ones(len(self.chinese_off))*(0)), numpy.ones(len(self.chinese_on))))
+    self.french_categories = numpy.concatenate(((numpy.ones(len(self.french_off))*(0)), numpy.ones(len(self.french_on))))
     random.seed(time.time_ns())
     self.mix()
     self.prepare_ds()
+
+  def divide_ds_FE(self):
+    self.prop = 7/10
+    base_path = '../../' + working_directory +'/'
+    #self.delete_folder_content('../../' + working_directory + '/')
+    
+    try:
+      #self.created_dir(base_path)
+      self.delete_folder_content(base_path)
+    except:
+      print('base path not existing')
+    self.created_dir(base_path + '/chinese')
+    self.created_dir(base_path + '/french')
+    self.created_dir(base_path + '/chinese/' + 'spente')
+    self.created_dir(base_path + '/chinese/' + 'accese')
+    self.created_dir(base_path + '/french/'+ 'spente')
+    self.created_dir(base_path + '/french/'+ 'accese')
+
+    '''self.created_dir(base_path + '/spente')
+    self.created_dir(base_path + '/accese')
+    self.created_dir(base_path + '/spente/' + 'chinese')
+    self.created_dir(base_path + '/spente/' + 'french')
+    self.created_dir(base_path + '/accese/'+ 'chinese')
+    self.created_dir(base_path + '/accese/'+ 'french')'''
+
+    if self.dspath == 'chinese':
+      chinese_off = self.chinese_off[0:int(len(self.chinese_off)*self.prop*0.9)]
+      chinese_on = self.chinese_on[0:int(len(self.chinese_on)*self.prop*0.9)]
+      french_off = self.french_off[0:int(len(self.french_off)*self.prop*0.1)]
+      french_on = self.french_off[0:int(len(self.french_off)*self.prop*0.1)]
+
+    if self.dspath == 'french':
+      chinese_off = self.chinese_off[0:int(len(self.chinese_off)*self.prop*0.1)]
+      chinese_on = self.chinese_on[0:int(len(self.chinese_on)*self.prop*0.1)]
+      french_off = self.french_off[0:int(len(self.french_off)*self.prop*0.9)]
+      french_on = self.french_off[0:int(len(self.french_off)*self.prop*0.9)]
+
+    self.save_images(chinese_off, base_path  + '/chinese/'+ 'spente')
+    self.save_images(chinese_on, base_path  + '/chinese/'+ 'accese')
+    self.save_images(french_off, base_path + '/french/' + 'spente')
+    self.save_images(french_on, base_path  + '/french/'+ 'accese')
+
+    '''self.save_images(chinese_off, base_path  + '/spente/'+ 'chinese')
+    self.save_images(chinese_on, base_path  + '/accese/'+ 'chinese')
+    self.save_images(french_off, base_path + '/spente/' + 'french')
+    self.save_images(french_on, base_path  + '/accese/'+ 'french')'''
+    
+    self.chinese_on = self.chinese_on[int(len(self.chinese_on)*self.prop):len(self.chinese_on)-1]
+    self.chinese_off = self.chinese_off[int(len(self.chinese_off)*self.prop):len(self.chinese_off)-1]
+    self.french_on = self.french_on[int(len(self.french_on)*self.prop):len(self.french_on)-1]
+    self.french_off = self.french_off[int(len(self.french_off)*self.prop):len(self.french_off)-1]
+
+
 
   def mix(self):
     self.chinese = list(self.chinese)
@@ -184,70 +246,32 @@ class ImagesToData:
     self.french_categories = numpy.array(self.french_categories)
 
   def prepare_ds(self):
+    ### Divisions
+  
+    self.CXT  = self.chinese[0:int(len(self.chinese)/2)]
+    self.CYT = self.chinese_categories[0: int(len(self.chinese)/2)]
+    self.MXT = self.chinese[int(len(self.chinese)/2) : len(self.chinese)]
+    self.MYT = self.chinese_categories[int(len(self.chinese)/2): len(self.chinese)]
 
-    self.chinese = list(self.chinese)
-    self.french = list(self.french)
-    self.chinese_categories = list(self.chinese_categories)
-    self.french_categories = list(self.french_categories)
-    
+    self.FXT = self.french[0:int(len(self.chinese)/2)]
+    self.FYT = self.french_categories[0:int(len(self.chinese)/2)]
+    self.MXT = numpy.concatenate((self.MXT, self.french[int(len(self.chinese)/2) : len(self.chinese)]), axis = 0)
+    self.MYT = numpy.concatenate((self.MYT, self.french_categories[int(len(self.chinese)/2) : len(self.chinese)]), axis = 0)
 
-    self.CX = self.chinese[0 : 2*252]
-    self.CY = self.chinese_categories[0 : 2*252]
-    self.CXT  = self.chinese[2*253-1 : 2*360]
-    self.CYT = self.chinese_categories[2*253-1 : 2*360]
-    self.MXT = self.chinese[2*361-1 : 2*469]
-    self.MYT = self.chinese_categories[2*361-1 : 2*469]
-
-
-    self.FX = self.french[0 : 2*252]
-    self.FY = self.french_categories[0 : 2*252]
-    self.FXT  = self.french[2*253-1 : 2*360]
-    self.FYT = self.french_categories[2*253-1 : 2*360]
-    self.MXT = numpy.concatenate((self.MXT, self.french[2*361-1 : 2*469]), axis = 0)
-    self.MYT = numpy.concatenate((self.MYT, self.french_categories[2*361-1 : 2*469]), axis = 0)
-    self.MX = numpy.concatenate((self.CX, self.FX), axis=0)
-    self.MY = numpy.concatenate((self.CY, self.FY), axis=0)
-
-    self.CX = numpy.array(self.CX)
-    self.CY = numpy.array(self.CY)
     self.CXT = numpy.array(self.CXT)
     self.CYT = numpy.array(self.CYT)
 
-    self.FX = numpy.array(self.FX)
-    self.FY = numpy.array(self.FY)
     self.FXT = numpy.array(self.FXT)
     self.FYT = numpy.array(self.FYT)
     
-    self.MX = numpy.array(self.MX)
-    self.MY = numpy.array(self.MY)
     self.MXT = numpy.array(self.MXT)
     self.MYT = numpy.array(self.MYT)
 
-  def little_mix(self):
-    self.MCX = self.CX
-    self.MCY = self.CY
-
-    self.MFX = self.FX
-    self.MFY = self.FY
-
-    for i in range(10):
-      index = random.randint(0,len(self.chinese)-1)
-      self.MCX.append(self.FX[index])
-      self.MCY.append(self.FY[index])
-
-    for i in range(10):
-      index = random.randint(0,len(self.chinese)-1)
-      self.MFX.append(self.CX[index])
-      self.MFY.append(self.CY[index])
-
     
 
 
-    
-
-
-  def __init__(self, initialize = False, create_directory = False):
-    
+  def __init__(self, initialize = False, create_directory = False, ds_selection = 'default'):
+    self.dspath = ds_selection
     self.size = size
     self.chinese = []
     self.chinese_categories = []
@@ -261,5 +285,5 @@ class ImagesToData:
     
 
 
-itd = ImagesToData(True, True)
+itd = ImagesToData(False, True)
 #itd.initial_routine()

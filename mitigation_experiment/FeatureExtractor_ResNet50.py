@@ -54,7 +54,7 @@ class FeatureExtractor:
         # Loss
         loss = tf.keras.losses.binary_crossentropy(y_true[0][1], y_pred[0])
         mask = tf.math.multiply(0.5, tf.math.add((tf.math.add(y_true[0][0], 0.0)), tf.math.abs(tf.math.subtract(y_true[0][0], 0.0))))     
-        res = tf.math.add(loss , dist2)
+        res = tf.math.add(loss , 0)
         if mask > 0 :
             return res
         else:
@@ -129,7 +129,7 @@ class FeatureExtractor:
         4.64158883e+00, 6.81292069e+00, 1.00000000e+01, 1.46779927e+01,
         2.15443469e+01, 3.16227766e+01, 4.64158883e+01, 6.81292069e+01,
         1.00000000e+02]
-        self.lamb = 10000#lambda_grid[0]
+        self.lamb = lambda_grid[3]
 
         self.CXT = itd.CXT
         self.CYT = itd.CYT
@@ -207,7 +207,7 @@ class FeatureExtractor:
         #checkpoint = ModelCheckpoint('vgg16_finetune.h15', monitor= 'val_accuracy', mode= 'max', save_best_only = True, verbose= 0)
         early_1 = EarlyStopping(monitor='val_dense_1_accuracy', min_delta=0.001, patience=8, verbose=1, mode='auto')
         
-        learning_rate= 1e-4
+        learning_rate= 4e-4
         learning_rate_fine = 1e-8
         
         adam = optimizers.Adam(learning_rate)

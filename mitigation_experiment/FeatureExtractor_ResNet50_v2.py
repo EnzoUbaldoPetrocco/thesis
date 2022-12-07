@@ -1,24 +1,46 @@
 #! /usr/bin/env python3
-
+from audioop import rms
+from re import I
+from unicodedata import name
 import manipulating_images_better
 import numpy as np
 from tensorflow.keras.applications.resnet50 import ResNet50
+from tensorflow.keras.applications.vgg16 import VGG16
+from tensorflow.keras.applications.vgg19 import VGG19
+from tensorflow.keras.applications.xception import Xception
+from tensorflow.keras.applications.inception_v3 import InceptionV3
+from tensorflow.keras.applications.inception_resnet_v2 import InceptionResNetV2
 from tensorflow.keras.preprocessing import image
+from tensorflow.keras.applications.vgg16 import preprocess_input
 import cv2
 from keras.preprocessing.image import ImageDataGenerator
-from keras import layers, optimizers
-from keras.callbacks import ReduceLROnPlateau, EarlyStopping
+from keras import layers, models, Model, optimizers
+from keras.callbacks import ReduceLROnPlateau, ModelCheckpoint, EarlyStopping
 import tensorflow as tf
+from skimage.color import gray2rgb
 from matplotlib import pyplot as plt
+from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Dense
-from keras.layers import Dense, Flatten
+import keras.layers as L
+from keras.layers import Input, Lambda, Dense, Flatten,Dropout, MaxPooling3D
+from keras.models import Sequential
+from tensorflow.keras.applications.efficientnet_v2 import EfficientNetV2S
+from tensorflow.keras.applications import efficientnet
+from tensorflow.keras.applications.efficientnet import EfficientNetB3
+from keras import backend as K
 '''config = tf.compat.v1.ConfigProto()
 config.gpu_options.allow_growth = True
 session = tf.compat.v1.Session(config=config)'''
 import torch
+import os
 
 
 BATCH_SIZE = 1
+def evaluate_sigmoid(y_pred):
+        if y_pred>0.5:
+                return 0
+        else:
+                return 1
 
 def unfreeze_model(model, layers_n):
     # We unfreeze the top 20 layers while leaving BatchNorm layers frozen
@@ -57,24 +79,18 @@ class FeatureExtractor:
         itd = manipulating_images_better.ImagesToData(ds_selection = self.ds_selection)
         itd.bf_ml()
 
-        CX = itd.CX
         CXT = itd.CXT
-        CY = itd.CY
         CYT = itd.CYT
 
-        FX = itd.FX
         FXT = itd.FXT
-        FY = itd.FY
         FYT = itd.FYT
 
-        MX = itd.MX
         MXT = itd.MXT
-        MY = itd.MY
         MYT = itd.MYT
 
         batch_size = 1
-
-        validation_split = 0.1
+        self.size = itd.size
+        validation_split = 0.3
         
         chindatagen = ImageDataGenerator(
             validation_split=validation_split,
@@ -108,8 +124,8 @@ class FeatureExtractor:
         #L.GlobalAveragePooling2D()#,
         #L.Dense(1, activation='sigmoid')
     ])
-        
         model.add(Flatten())
+        #model.add(Dense(50, activation='relu'))
         model.add(Dense(1, activation='sigmoid'))
         model.trainable = True
         for layer in model.layers[0].layers:
@@ -124,15 +140,15 @@ class FeatureExtractor:
         ###################### TRAINING LAST LAYERS AND FINE TUNING ########################
         print('RETRAINING')
         
-        ep = 100
+        ep = 25
         eps_fine = 10
         verbose_param = 1
         
-        lr_reduce = ReduceLROnPlateau(monitor='val_accuracy', factor=0.2, patience=3, verbose=1, mode='max', min_lr=1e-8)
+        lr_reduce = ReduceLROnPlateau(monitor='val_accuracy', factor=0.3, patience=5, verbose=1, mode='max', min_lr=1e-8)
         #checkpoint = ModelCheckpoint('vgg16_finetune.h15', monitor= 'val_accuracy', mode= 'max', save_best_only = True, verbose= 0)
-        early = EarlyStopping(monitor='val_accuracy', min_delta=0.001, patience=10, verbose=1, mode='auto')
+        early = EarlyStopping(monitor='val_accuracy', min_delta=0.001, patience=25, verbose=1, mode='auto')
         
-        learning_rate= 5e-4
+        learning_rate= 4e-4
         learning_rate_fine = 1e-8
         
         adam = optimizers.Adam(learning_rate)
@@ -164,28 +180,11 @@ class FeatureExtractor:
             color_mode = 'rgb',
             subset = 'validation')
 
-            '''for i in chinese:
-                plt.figure()
-                plt.imshow(i[0][0])
-                plt.show()'''
-
-            
+         
 
             Number_Of_Training_Images = chinese.classes.shape[0]
             steps_per_epoch = Number_Of_Training_Images/batch_size
-
-            #os.environ['CUDA_VISIBLE_DEVICES'] = '0'
-
-            #device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-            #print('Using device:' , device)
-            #model
-
-            history = model.fit(chinese, 
-            #batch_size = batch_size, 
-            epochs=ep, validation_data=chinese_val, 
-            #steps_per_epoch = steps_per_epoch,
-            callbacks=[early, lr_reduce],verbose=verbose_param)
-            #device = torch.device('cpu')
+            history = model.fit(chinese, epochs=ep, validation_data=chinese_val, callbacks=[early, lr_reduce],verbose=verbose_param)
             
         if self.ds_selection == "french":
             print('french')
@@ -202,17 +201,12 @@ class FeatureExtractor:
             class_mode = 'binary',
             color_mode = "rgb",
             subset = 'validation')
+            
 
             Number_Of_Training_Images = french.classes.shape[0]
             steps_per_epoch = Number_Of_Training_Images/batch_size
 
-            #os.environ['CUDA_VISIBLE_DEVICES'] = '0'
-            #device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-            #print('Using device:' , device)
-            history = model.fit(french, epochs=ep, 
-            validation_data=french_val, callbacks=[early, lr_reduce], verbose=verbose_param)
-            #device = torch.device('cpu')            
-            
+            history = model.fit(french, epochs=ep, validation_data=french_val, callbacks=[ lr_reduce], verbose=verbose_param)
             
         if self.ds_selection == "mix":
             print('mix')
@@ -284,24 +278,12 @@ class FeatureExtractor:
         ############# FEATURE EXTRACTION ################
         #print(model.layers[-2])
         #model = Model(inputs=model.inputs, outputs=model.layers[:-2])
-        model.layers.pop()        
-        model.summary()
+        #model.layers.pop()        
+        #model.summary()
         #device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         #print('Using device:' , device)
         
         print('FEATURE EXTRACTION')
-        features = []
-        for i in CX:
-            x = np.reshape(i, (itd.size,itd.size))*255
-            x = cv2.merge([x,x,x])
-            x = image.img_to_array(x)
-            x = np.expand_dims(x, axis=0)
-            feature = model.predict(x, verbose = 0)
-            features.append(feature[0].flatten())
-
-            
-        self.CX = np.array(features)
-        self.CY = CY
 
         features = []
         for i in CXT:
@@ -310,22 +292,11 @@ class FeatureExtractor:
             x = image.img_to_array(x)
             x = np.expand_dims(x, axis=0)
             feature = model.predict(x, verbose = 0)
-            features.append(feature[0].flatten())
+            feature = evaluate_sigmoid(feature)
+            features.append(feature)
         
-        self.CXT = np.array(features)
+        self.CTpred = features
         self.CYT = CYT
-
-        features = []
-        for i in FX:
-            x = np.reshape(i, (itd.size,itd.size))*255
-            x = cv2.merge([x,x,x])
-            x = image.img_to_array(x)
-            x = np.expand_dims(x, axis=0)
-            feature = model.predict(x, verbose = 0)
-            features.append(feature[0].flatten())
-        
-        self.FX = np.array(features)
-        self.FY = FY
 
         features = []
         for i in FXT:
@@ -334,22 +305,11 @@ class FeatureExtractor:
             x = image.img_to_array(x)
             x = np.expand_dims(x, axis=0)
             feature = model.predict(x, verbose = 0)
-            features.append(feature[0].flatten())
+            feature = evaluate_sigmoid(feature)
+            features.append(feature)
         
-        self.FXT = np.array(features)
+        self.FTpred = features
         self.FYT = FYT
-
-        features = []
-        for i in MX:
-            x = np.reshape(i, (itd.size,itd.size))*255
-            x = cv2.merge([x,x,x])
-            x = image.img_to_array(x)
-            x = np.expand_dims(x, axis=0)
-            feature = model.predict(x, verbose = 0)
-            features.append(feature[0].flatten())
-        
-        self.MX = np.array(features)
-        self.MY = MY
 
         features = []
         for i in MXT:
@@ -358,11 +318,19 @@ class FeatureExtractor:
             x = image.img_to_array(x)
             x = np.expand_dims(x, axis=0)
             feature = model.predict(x, verbose = 0)
-            features.append(feature[0].flatten())
+            feature = evaluate_sigmoid(feature)
+            features.append(feature)
         
-        self.MXT = np.array(features)
+        self.MTpred = features
         self.MYT = MYT
 
+        '''plt.figure()
+        plt.imshow(np.reshape(itd.FXT[10], (itd.size,itd.size)))
+        plt.show()
+
+        plt.figure()
+        plt.imshow(np.reshape(itd.CXT[10], (itd.size,itd.size)))
+        plt.show()'''
         
         #device = torch.device('cpu') 
 
