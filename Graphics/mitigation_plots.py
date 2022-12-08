@@ -1,6 +1,7 @@
 #! /usr/bin/env python3
 from graphs import Histograms, Mitigation
 import numpy as np
+from matplotlib import pyplot as plt
 
 chinese_data = {
     'lambda0': {
@@ -43,15 +44,18 @@ french_data = {
 }
 
 ############################################
+########    ACCURACIES #####################
 
-
-x = np.logspace(0,2,25)
+#x = np.logspace(0,2,25)
+x = np.linspace(0,100,25)
+'''
 chinese_mitigation = Mitigation(acc_main_class=chinese_data['lambda']['Accuracy_main'], acc_second_class=chinese_data['lambda']['Accuracy_second'],x=x,
 fig_title='Chinese Mitigation', titles=["Chinese Accuracy", "French Accuracy", "3D Plot", "Metric Accuracy"] )
 french_mitigation = Mitigation(acc_main_class=french_data['lambda']['Accuracy_main'], acc_second_class=french_data['lambda']['Accuracy_second'],x=x,
-fig_title='Chinese Mitigation', titles=["French Accuracy", "Chinese Accuracy", "3D Plot", "Metric Accuracy"] )
-
-'''chinese_mitigation.plot_main()
+fig_title='French Mitigation', titles=["French Accuracy", "Chinese Accuracy", "3D Plot", "Metric Accuracy"] )
+chin_tit= {'main': 'Chinese Accuracies', 'second': 'French Accuracies', 'metric': 'Mean Accuracies'}
+fren_tit= {'second': 'Chinese Accuracies', 'main': 'French Accuracies', 'metric': 'Mean Accuracies'}
+chinese_mitigation.plot_main()
 chinese_mitigation.plot_second()
 chinese_mitigation.plot_metric()
 chinese_mitigation.plot_3d()
@@ -59,10 +63,12 @@ chinese_mitigation.plot_3d()
 french_mitigation.plot_main()
 french_mitigation.plot_second()
 french_mitigation.plot_metric()
-french_mitigation.plot_3d()'''
+french_mitigation.plot_3d()
 
-chinese_mitigation.plot_together()
-french_mitigation.plot_together()
+#chinese_mitigation.plot_together()
+#french_mitigation.plot_together()
+chinese_mitigation.plot_single(chin_tit)
+french_mitigation.plot_single(fren_tit)
 
 ###########################################
 ## First metric: OPTIMAL LAMBDA IS MINORITY CLASS MAX
@@ -78,7 +84,7 @@ max_value = max(french_data['lambda']['Accuracy_second'])
 max_index = french_data['lambda']['Accuracy_second'].index(max_value)
 french_labels = ["Lambda 0 Chinese", "Lambda 0 French", "Lambda " + str(max_index) + " Chinese", "Lambda " + str(max_index) + " French"]
 french_hist = Histograms(french_labels, [french_data['lambda0']['Accuracy_second'], french_data['lambda0']['Accuracy_main'], 
-french_data['lambda']['Accuracy_second'][max_index], french_data['lambda']['Accuracy_main'][max_index]],'Accuracy', title=title )
+french_data['lambda']['Accuracy_second'][max_index], french_data['lambda']['Accuracy_main'][max_index]],'Accuracy', title=title + str(x[max_index])[0:4])
 
 chinese_hist.plot()
 french_hist.plot()
@@ -106,7 +112,46 @@ max_value = max(fren_func)
 max_index = fren_func.index(max_value)
 french_labels = ["Lambda 0 Chinese", "Lambda 0 French", "Lambda Grid " + str(max_index) + " Chinese", "Lambda Grid " + str(max_index)  + " French"]
 french_hist = Histograms(french_labels, [french_data['lambda0']['Accuracy_second'], french_data['lambda0']['Accuracy_main'], 
-french_data['lambda']['Accuracy_second'][max_index], french_data['lambda']['Accuracy_main'][max_index]],'Accuracy', title=title )
+french_data['lambda']['Accuracy_second'][max_index], french_data['lambda']['Accuracy_main'][max_index]],'Accuracy', title=title + str(x[max_index])[0:4])
 
 chinese_hist.plot()
 french_hist.plot()
+'''
+
+########################################################
+##############  DROPS ###############################
+chindrop = []
+for i in range(0,25):
+    k = chinese_data['lambda']['Accuracy_main'][i] - french_data['lambda']['Accuracy_second'][i]
+    chindrop.append(k)
+frendrop = []
+for i in range(0,25):
+    k = french_data['lambda']['Accuracy_main'][i] - chinese_data['lambda']['Accuracy_second'][i]
+    frendrop.append(k)
+tick_points = 13
+ticks_label = []        
+logspac= np.logspace(-2,2,tick_points)
+for i in range(0,tick_points):
+    ticks_label.append(str(logspac[i])[0:6])
+ticks = np.linspace(0, 100, tick_points)
+fig, ax = plt.subplots()
+ax.set_title('Chinese Drops')
+plt.xticks(ticks=ticks, labels=ticks_label)
+ax.plot(x, chindrop, linewidth=2.0)
+plt.show()
+fig, ax = plt.subplots()
+ax.set_title('French Drops')
+plt.xticks(ticks=ticks, labels=ticks_label)
+ax.plot(x, frendrop, linewidth=2.0)
+plt.show()
+
+mindrop = []
+for i in range(0,25):
+    k = (chindrop[i]+frendrop[i])/2
+    mindrop.append(k)
+fig, ax = plt.subplots()
+ax.set_title('Mean Drops')
+plt.axhline(y = 5.15, color = 'r', linestyle = '-')
+plt.xticks(ticks=ticks, labels=ticks_label)
+ax.plot(x, mindrop, linewidth=2.0)
+plt.show()
