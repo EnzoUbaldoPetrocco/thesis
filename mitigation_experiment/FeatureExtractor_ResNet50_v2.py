@@ -1,7 +1,4 @@
 #! /usr/bin/env python3
-from audioop import rms
-from re import I
-from unicodedata import name
 import manipulating_images_better
 import numpy as np
 from tensorflow.keras.applications.resnet50 import ResNet50
@@ -146,7 +143,7 @@ class FeatureExtractor:
         
         lr_reduce = ReduceLROnPlateau(monitor='val_accuracy', factor=0.3, patience=5, verbose=1, mode='max', min_lr=1e-8)
         #checkpoint = ModelCheckpoint('vgg16_finetune.h15', monitor= 'val_accuracy', mode= 'max', save_best_only = True, verbose= 0)
-        early = EarlyStopping(monitor='val_accuracy', min_delta=0.001, patience=25, verbose=1, mode='auto')
+        early = EarlyStopping(monitor='val_accuracy', min_delta=0.001, patience=5, verbose=1, mode='auto')
         
         learning_rate= 4e-4
         learning_rate_fine = 1e-8
@@ -276,10 +273,10 @@ class FeatureExtractor:
 
         #################################################
         ############# FEATURE EXTRACTION ################
-        #print(model.layers[-2])
-        #model = Model(inputs=model.inputs, outputs=model.layers[:-2])
-        #model.layers.pop()        
-        #model.summary()
+        print(model.layers[-2])
+        model.summary()
+        model = Model(inputs=model.inputs, outputs=model.layers[:-2]) 
+        model.summary()
         #device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         #print('Using device:' , device)
         
@@ -292,7 +289,6 @@ class FeatureExtractor:
             x = image.img_to_array(x)
             x = np.expand_dims(x, axis=0)
             feature = model.predict(x, verbose = 0)
-            feature = evaluate_sigmoid(feature)
             features.append(feature)
         
         self.CTpred = features
@@ -305,7 +301,6 @@ class FeatureExtractor:
             x = image.img_to_array(x)
             x = np.expand_dims(x, axis=0)
             feature = model.predict(x, verbose = 0)
-            feature = evaluate_sigmoid(feature)
             features.append(feature)
         
         self.FTpred = features
@@ -318,20 +313,8 @@ class FeatureExtractor:
             x = image.img_to_array(x)
             x = np.expand_dims(x, axis=0)
             feature = model.predict(x, verbose = 0)
-            feature = evaluate_sigmoid(feature)
             features.append(feature)
         
         self.MTpred = features
         self.MYT = MYT
-
-        '''plt.figure()
-        plt.imshow(np.reshape(itd.FXT[10], (itd.size,itd.size)))
-        plt.show()
-
-        plt.figure()
-        plt.imshow(np.reshape(itd.CXT[10], (itd.size,itd.size)))
-        plt.show()'''
-        
-        #device = torch.device('cpu') 
-
         

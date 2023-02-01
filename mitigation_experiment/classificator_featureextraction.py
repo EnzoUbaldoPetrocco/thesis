@@ -3,12 +3,14 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from FeatureExtractor_ResNet50_v2 import FeatureExtractor
+from FeatureExtractor_ResNet50 import FeatureExtractor
 from math import floor
 from sklearn.metrics import confusion_matrix
 import tensorflow as tf
 import cv2
 from tensorflow.keras.preprocessing import image
+from sklearn.svm import SVC
+from sklearn.model_selection import GridSearchCV
 #os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 class SVCClassificator:
 
@@ -65,29 +67,85 @@ class SVCClassificator:
                 ############### READ DATA ##################################
                 itd = FeatureExtractor(self.ds_selection)
 
-                CTpred = itd.CTpred
-                CYT = itd.CYT
-                FTpred = itd.FTpred
-                FYT = itd.FYT
-                MTpred = itd.MTpred
-                MYT = itd.MYT
+                CX = itd.CX[0:int(len(itd.CX)/2)]
+                CY = itd.CY[0:int(len(itd.CX)/2)]
+                FX = itd.FX[0:int(len(itd.CX)/2)]
+                FY = itd.FY[0:int(len(itd.CX)/2)]
+                MX = itd.MX[0:int(len(itd.CX)/2)]
+                MY = itd.MY[0:int(len(itd.CX)/2)]
+
+                CXT = itd.CX[int(len(itd.CX)/2):int(len(itd.CX))-1]
+                CYT = itd.CY[int(len(itd.CX)/2):int(len(itd.CX))-1]
+                FXT = itd.FX[int(len(itd.CX)/2):int(len(itd.CX))-1]
+                FYT = itd.FY[int(len(itd.CX)/2):int(len(itd.CX))-1]
+                MXT= itd.MX[int(len(itd.MX)/2):int(len(itd.MX))-1]
+                MYT = itd.MY[int(len(itd.MX)/2):int(len(itd.MX))-1]
 
                 self.size = itd.size
+        #####################################################
+        #############  TRAINING SVM ########################
+                points = 50
+                print('MODEL SELECTION AND TUNING')
+                if self.kernel == 'rbf':
+                    logspaceC = np.logspace(-2,2.5,points)
+                    logspaceGamma = np.logspace(-2,2.5,points)
+                if self.kernel == 'linear':
+                    logspaceC = np.logspace(-2,2.5,points)
+                    logspaceGamma = np.logspace(-2,2.5,points)
+                grid = {'C':        logspaceC,
+                        'kernel':   [self.kernel],
+                        'gamma':    logspaceGamma}
+                MS = GridSearchCV(estimator = SVC(),
+                                param_grid = grid,
+                                scoring = 'balanced_accuracy',
+                                cv = 10,
+                                verbose = 0)
 
-                ###############################################################
-                ######################### TESTING #############################
+
+                if self.ds_selection == "chinese":
+                    H = MS.fit(CX,CY)
+                if self.ds_selection == "french":
+                    H = MS.fit(FX,FY)
+                if self.ds_selection == "mix":
+                    H = MS.fit(MX,MY)          
+                
+                print('CLASSIFICATION')
+                print('C best param')
+                print(H.best_params_['C'])
+                print('gamma best param')
+                print(H.best_params_['gamma'])
+
+                M = SVC(C = H.best_params_['C'],
+                        kernel = H.best_params_['kernel'],
+                        gamma = H.best_params_['gamma'])
+
+                if self.ds_selection == "chinese":
+                    M = MS.fit(CX,CY)
+                if self.ds_selection == "french":
+                    M = MS.fit(FX,FY)
+                if self.ds_selection == "mix":
+                    M = MS.fit(MX,MY)
+
+                
+                ####################################################
+                ################## TESTING #########################
+                
                 print('PREDICTING CHINESE TEST SET')
-                cm = confusion_matrix(CYT,CTpred)
+                CYF = M.predict(CXT)
+                cm = confusion_matrix(CYT,CYF)
                 print(cm)
                 Ccm_list.append(cm)
                 print('Predicting FRENCH TEST SET')
-                cm = confusion_matrix(FYT,FTpred)
+                CFYF = M.predict(FXT)
+                cm = confusion_matrix(FYT,CFYF)
                 print(cm)
                 Fcm_list.append(cm)
                 print('PREDICTING MIX TEST SET')
-                cm = confusion_matrix(MYT,MTpred)
+                MYF = M.predict(MXT)
+                cm = confusion_matrix(MYT,MYF)
                 print(cm)
                 Mcm_list.append(cm)
+
 
 
         ######################################################

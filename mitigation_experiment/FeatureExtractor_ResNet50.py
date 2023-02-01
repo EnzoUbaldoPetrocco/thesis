@@ -18,6 +18,7 @@ from sklearn.utils import shuffle
 from tensorflow.keras.applications.resnet50 import ResNet50
 from tensorflow.keras.layers import Dense
 from tensorflow.keras.models import Model
+from tensorflow.keras.preprocessing import image
 
 import manipulating_images_better
 
@@ -54,7 +55,7 @@ class FeatureExtractor:
         # Loss
         loss = tf.keras.losses.binary_crossentropy(y_true[0][1], y_pred[0])
         mask = tf.math.multiply(0.5, tf.math.add((tf.math.add(y_true[0][0], 0.0)), tf.math.abs(tf.math.subtract(y_true[0][0], 0.0))))     
-        res = tf.math.add(loss , 0)
+        res = tf.math.add(loss , dist2)
         if mask > 0 :
             return res
         else:
@@ -129,7 +130,7 @@ class FeatureExtractor:
         4.64158883e+00, 6.81292069e+00, 1.00000000e+01, 1.46779927e+01,
         2.15443469e+01, 3.16227766e+01, 4.64158883e+01, 6.81292069e+01,
         1.00000000e+02]
-        self.lamb = lambda_grid[3]
+        self.lamb = 0#lambda_grid[0]
 
         self.CXT = itd.CXT
         self.CYT = itd.CYT
@@ -174,6 +175,7 @@ class FeatureExtractor:
         
         #model.summary()
         x = Flatten()(x)
+        x = Dense(100, activation='relu', name= 'output_layer')(x)
         chin = Dense(1, activation='sigmoid', name='dense')(x)
         fren = Dense(1, activation='sigmoid', name='dense_1')(x)
         model = Model(inputs=input,
@@ -195,7 +197,7 @@ class FeatureExtractor:
         ###################### TRAINING LAST LAYERS AND FINE TUNING ########################
         print('RETRAINING')
         
-        ep = 100
+        ep = 1
         verbose_param = 1
         #self.batch_end = self.CustomCallback(self.model, self.lamb)
         
@@ -207,7 +209,7 @@ class FeatureExtractor:
         #checkpoint = ModelCheckpoint('vgg16_finetune.h15', monitor= 'val_accuracy', mode= 'max', save_best_only = True, verbose= 0)
         early_1 = EarlyStopping(monitor='val_dense_1_accuracy', min_delta=0.001, patience=8, verbose=1, mode='auto')
         
-        learning_rate= 4e-4
+        learning_rate= 1e-4
         learning_rate_fine = 1e-8
         
         adam = optimizers.Adam(learning_rate)
@@ -296,7 +298,6 @@ class FeatureExtractor:
 
         self.M = self.model
             
-            
         ##############################################################
         ############## PLOT SOME RESULTS ############################
         plot = False
@@ -315,25 +316,58 @@ class FeatureExtractor:
                             linewidth = 1.5, label = 'Training Accuracy')
             plt.plot(val_acc_x, val_acc, marker = '.', color = 'red', markersize = 10, 
                             linewidth = 1.5, label = 'Validation Accuracy')
-
             plt.title('Training Accuracy and Testing Accuracy w.r.t Number of Epochs')
-
             plt.legend()
-
             plt.figure()
-
             plt.plot(train_loss_x, train_loss, marker = 'o', color = 'blue', markersize = 10, 
                             linewidth = 1.5, label = 'Training Loss')
             plt.plot(val_loss_x, val_acc, marker = '.', color = 'red', markersize = 10, 
                             linewidth = 1.5, label = 'Validation Loss')
-
             plt.title('Training Loss and Testing Loss w.r.t Number of Epochs')
-
             plt.legend()
+            plt.show()               
 
-            plt.show()
-
-                
-
-       
+        #################################################
+        ############# FEATURE EXTRACTION ################
+        layer_name = 'output_layer'
+        model = Model(inputs=model.inputs, outputs= model.get_layer(layer_name).output) 
+        #device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        #print('Using device:' , device)
         
+        print('FEATURE EXTRACTION')
+
+        features = []
+        for i in self.CXT:
+            x = np.reshape(i, (itd.size,itd.size))*255
+            x = cv2.merge([x,x,x])
+            x = image.img_to_array(x)
+            x = np.expand_dims(x, axis=0)
+            feature = model.predict(x, verbose = 0)
+            features.append(feature[0])
+        
+        self.CX = features
+        self.CY = self.CYT
+
+        features = []
+        for i in self.FXT:
+            x = np.reshape(i, (itd.size,itd.size))*255
+            x = cv2.merge([x,x,x])
+            x = image.img_to_array(x)
+            x = np.expand_dims(x, axis=0)
+            feature = model.predict(x, verbose = 0)
+            features.append(feature[0])
+        
+        self.FX = features
+        self.FY = self.FYT
+
+        features = []
+        for i in self.MXT:
+            x = np.reshape(i, (itd.size,itd.size))*255
+            x = cv2.merge([x,x,x])
+            x = image.img_to_array(x)
+            x = np.expand_dims(x, axis=0)
+            feature = model.predict(x, verbose = 0)
+            features.append(feature[0])
+        
+        self.MX = features
+        self.MY = self.MYT

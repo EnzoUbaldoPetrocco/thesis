@@ -17,7 +17,7 @@ from torch import randint
 import os, shutil
 
 
-size = 75
+size = 128
 total_n_images = 469
 
 class ImagesToData:
