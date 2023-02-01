@@ -13,7 +13,7 @@ class Mitigation:
         self.fig_title = fig_title
         self.tick_points = 13
 
-    def plot_main(self, title):
+    def plot_main(self, title, legend=""):
         fig, ax = plt.subplots()
         ax.set_title(title)
         ticks_label = []
@@ -26,7 +26,7 @@ class Mitigation:
         #ax.set_xscale('log')
         plt.show()
 
-    def plot_second(self, title):
+    def plot_second(self, title, legend=""):
         fig, ax = plt.subplots()
         ax.set_title(title)
         ticks_label = []
@@ -39,7 +39,7 @@ class Mitigation:
         #ax.set_xscale('log')
         plt.show()
     
-    def plot_3d(self):
+    def plot_3d(self, legend=""):
         ax = plt.axes(projection='3d')
         ticks_label = []
         
@@ -59,7 +59,7 @@ class Mitigation:
         #ax.set_xscale('log')
         plt.show()
 
-    def plot_metric(self, title):
+    def plot_metric(self, title, legend=""):
         fig, ax = plt.subplots()
         ax.set_title(title)
         ticks_label = []        

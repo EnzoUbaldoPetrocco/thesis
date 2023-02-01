@@ -118,6 +118,16 @@ chinese_hist.plot()
 french_hist.plot()
 '''
 
+print('CHINESE DROPS')
+for i in range(0,25):
+    drop = chinese_data['lambda']['Accuracy_main'][i] - french_data['lambda']['Accuracy_second'][i]
+    print("Drop for lambda in grid(" + str(i) + "):" + str(drop))
+
+print('FRENCH DROPS')
+for i in range(0,25):
+    drop = french_data['lambda']['Accuracy_main'][i] - chinese_data['lambda']['Accuracy_second'][i]
+    print("Drop for lambda in grid(" + str(i) + "):" + str(drop))
+
 ########################################################
 ##############  DROPS ###############################
 chindrop = []
@@ -136,11 +146,17 @@ for i in range(0,tick_points):
 ticks = np.linspace(0, 100, tick_points)
 fig, ax = plt.subplots()
 ax.set_title('Chinese Drops')
+ax.legend(["Drop of Accuracy"])
+ax.set_xlabel("Lambda")
+ax.set_ylabel("Drop of Accuracy from Chinese to French model")
 plt.xticks(ticks=ticks, labels=ticks_label)
 ax.plot(x, chindrop, linewidth=2.0)
 plt.show()
 fig, ax = plt.subplots()
 ax.set_title('French Drops')
+ax.set_xlabel("Lambda")
+ax.set_ylabel("Drop of Accuracy from French to Chinese model")
+ax.legend(["Drop of Accuracy"])
 plt.xticks(ticks=ticks, labels=ticks_label)
 ax.plot(x, frendrop, linewidth=2.0)
 plt.show()
@@ -151,6 +167,9 @@ for i in range(0,25):
     mindrop.append(k)
 fig, ax = plt.subplots()
 ax.set_title('Mean Drops')
+ax.legend(["Drop of Accuracy"])
+ax.set_ylabel("Mean Drop of Accuracy")
+ax.set_xlabel("Lambda")
 plt.axhline(y = 5.15, color = 'r', linestyle = '-')
 plt.xticks(ticks=ticks, labels=ticks_label)
 ax.plot(x, mindrop, linewidth=2.0)

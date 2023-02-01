@@ -14,7 +14,7 @@ import time
 import os, shutil
 from PIL import Image
 
-size = 33
+size = 128
 total_n_images = 470
 
 class ImagesToData:
