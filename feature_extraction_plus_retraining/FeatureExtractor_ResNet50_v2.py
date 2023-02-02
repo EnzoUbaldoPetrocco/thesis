@@ -10,7 +10,7 @@ from keras import layers, optimizers
 from keras.callbacks import ReduceLROnPlateau, EarlyStopping
 import tensorflow as tf
 from matplotlib import pyplot as plt
-from tensorflow.keras.layers import Dense
+from tensorflow.keras.layers import Dense, Dropout
 from keras.layers import Dense, Flatten
 '''config = tf.compat.v1.ConfigProto()
 config.gpu_options.allow_growth = True
@@ -110,7 +110,8 @@ class FeatureExtractor:
     ])
         
         model.add(Flatten())
-        model.add(Dense(80, activation = 'relu'))
+        model.add(Dropout(0.15))
+        model.add(Dense(50, activation = 'relu'))
         model.add(Dense(1, activation='sigmoid'))
 
         model.trainable = True

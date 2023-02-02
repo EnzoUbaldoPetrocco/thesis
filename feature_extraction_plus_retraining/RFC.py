@@ -62,7 +62,7 @@ class RFCClassificator:
                 ################### MODEL SELECTION (HYPERPARAMETER TUNING)##########
                 print('MODEL SELECTION AND TUNING')
 
-                rfc=RandomForestClassifier(random_state=42, n_estimators = 500)
+                rfc=RandomForestClassifier(random_state=42, n_estimators = 700)
                 logspace_n_estimators = []
                 logspace_max_depth = []
                 for i in np.logspace(1,2.5,40):
