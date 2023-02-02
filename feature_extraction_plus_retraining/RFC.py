@@ -1,45 +1,20 @@
 #! /usr/bin/env python3
 
-import pandas as pd
+from FeatureExtractor_ResNet50_v2 import FeatureExtractor
 import numpy as np
 import matplotlib.pyplot as plt
-from FeatureExtractor_ResNet50 import FeatureExtractor
-from math import floor
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import GridSearchCV
+import manipulating_images_better
 from sklearn.metrics import confusion_matrix
 import tensorflow as tf
-import cv2
-from tensorflow.keras.preprocessing import image
-from sklearn.svm import SVC
-from sklearn.model_selection import GridSearchCV
-#os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
-class SVCClassificator:
 
-    def __init__(self, ds_selection = "", kernel= ""):
+class RFCClassificator:
+
+    def __init__(self, ds_selection = ""):
         self.ds_selection = ds_selection
-        self.kernel = kernel
-
-    def evaluate_sigmoid(self,y_pred):
-        if y_pred<0.5:
-                return 0
-        else:
-                return 1
 
     def execute(self):
-        #gpus = tf.config.experimental.list_physical_devices('CPU')
-        '''gpus = tf.config.experimental.list_physical_devices('GPU')
-        if gpus:
-        # Restrict TensorFlow to only allocate 2GB of memory on the first GPU
-            try:
-                tf.config.experimental.set_virtual_device_configuration(
-                    gpus[0],
-                    [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=2000)])
-                logical_gpus = tf.config.experimental.list_logical_devices('GPU')
-                print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
-            except RuntimeError as e:
-                # Virtual devices must be set before GPUs have been initialized
-                print(e)
-        else:
-            print('no gpus')'''
         # Confusion matrix lists
         Ccm_list = []
         Fcm_list = []
@@ -62,91 +37,80 @@ class SVCClassificator:
                                 print(e)
                 else:
                         print('no gpus')
-
                 ############################################################
                 ############### READ DATA ##################################
                 itd = FeatureExtractor(self.ds_selection)
-                proportion = 1.5
 
-                CX = itd.CX[0:int(len(itd.CX)/proportion)]
-                CY = itd.CY[0:int(len(itd.CX)/proportion)]
-                FX = itd.FX[0:int(len(itd.CX)/proportion)]
-                FY = itd.FY[0:int(len(itd.CX)/proportion)]
-                MX = itd.MX[0:int(len(itd.CX)/proportion)]
-                MY = itd.MY[0:int(len(itd.CX)/proportion)]
+                CX = itd.CX
+                CXT = itd.CXT
+                CY = itd.CY
+                CYT = itd.CYT
 
-                CXT = itd.CX[int(len(itd.CX)/proportion):int(len(itd.CX))-1]
-                CYT = itd.CY[int(len(itd.CX)/proportion):int(len(itd.CX))-1]
-                FXT = itd.FX[int(len(itd.CX)/proportion):int(len(itd.CX))-1]
-                FYT = itd.FY[int(len(itd.CX)/proportion):int(len(itd.CX))-1]
-                MXT= itd.MX[int(len(itd.MX)/proportion):int(len(itd.MX))-1]
-                MYT = itd.MY[int(len(itd.MX)/proportion):int(len(itd.MX))-1]
+                FX = itd.FX
+                FXT = itd.FXT
+                FY = itd.FY
+                FYT = itd.FYT
 
-                self.size = itd.size
-        #####################################################
-        #############  TRAINING SVM ########################
-                points = 50
+
+                MX = itd.MX
+                MXT = itd.MXT
+                MY = itd.MY
+                MYT = itd.MYT
+
+
+                #####################################################################
+                ################### MODEL SELECTION (HYPERPARAMETER TUNING)##########
                 print('MODEL SELECTION AND TUNING')
-                if self.kernel == 'rbf':
-                    logspaceC = np.logspace(-2,2.5,points)
-                    logspaceGamma = np.logspace(-2,2.5,points)
-                if self.kernel == 'linear':
-                    logspaceC = np.logspace(-2,2.5,points)
-                    logspaceGamma = np.logspace(-2,2.5,points)
-                grid = {'C':        logspaceC,
-                        'kernel':   [self.kernel],
-                        'gamma':    logspaceGamma}
-                MS = GridSearchCV(estimator = SVC(),
-                                param_grid = grid,
-                                scoring = 'balanced_accuracy',
-                                cv = 10,
-                                verbose = 0)
 
+                rfc=RandomForestClassifier(random_state=42, n_estimators = 500)
+                logspace_n_estimators = []
+                logspace_max_depth = []
+                for i in np.logspace(1,2.5,40):
+                        logspace_max_depth.append(int(i))
+                for i in np.logspace(0,3,50):
+                    logspace_n_estimators.append(int(i))
+                param_grid = { 
+                    'max_depth' : logspace_max_depth,
+                    }
+                
+                CV_rfc = GridSearchCV(estimator=rfc, param_grid=param_grid, cv= 5)
+                
+                if self.ds_selection == "chinese":
+                    CV_rfc.fit(CX, CY)
+                if self.ds_selection == "french":
+                    CV_rfc.fit(FX, FY)
+                if self.ds_selection == "mix":
+                    CV_rfc.fit(MX, MY)
+
+                print(CV_rfc.best_params_)
+
+                rfc1=RandomForestClassifier(random_state=42, n_estimators= 500,
+                max_depth=CV_rfc.best_params_['max_depth'])
 
                 if self.ds_selection == "chinese":
-                    H = MS.fit(CX,CY)
+                    rfc1.fit(CX, CY)
                 if self.ds_selection == "french":
-                    H = MS.fit(FX,FY)
+                    rfc1.fit(FX, FY)
                 if self.ds_selection == "mix":
-                    H = MS.fit(MX,MY)          
-                
-                print('CLASSIFICATION')
-                print('C best param')
-                print(H.best_params_['C'])
-                print('gamma best param')
-                print(H.best_params_['gamma'])
-
-                M = SVC(C = H.best_params_['C'],
-                        kernel = H.best_params_['kernel'],
-                        gamma = H.best_params_['gamma'])
-
-                if self.ds_selection == "chinese":
-                    M = MS.fit(CX,CY)
-                if self.ds_selection == "french":
-                    M = MS.fit(FX,FY)
-                if self.ds_selection == "mix":
-                    M = MS.fit(MX,MY)
-
-                
+                    rfc1.fit(MX, MY)
                 ####################################################
                 ################## TESTING #########################
-                
+
                 print('PREDICTING CHINESE TEST SET')
-                CYF = M.predict(CXT)
+                CYF = rfc1.predict(CXT)
                 cm = confusion_matrix(CYT,CYF)
                 print(cm)
                 Ccm_list.append(cm)
                 print('Predicting FRENCH TEST SET')
-                CFYF = M.predict(FXT)
+                CFYF = rfc1.predict(FXT)
                 cm = confusion_matrix(FYT,CFYF)
                 print(cm)
                 Fcm_list.append(cm)
                 print('PREDICTING MIX TEST SET')
-                MYF = M.predict(MXT)
+                MYF = rfc1.predict(MXT)
                 cm = confusion_matrix(MYT,MYF)
                 print(cm)
                 Mcm_list.append(cm)
-
 
 
         ######################################################
@@ -229,6 +193,7 @@ class SVCClassificator:
         Ctot = return_tot_elements(Ccm_list[0])
         Ccm_list = calculate_percentage_confusion_matrix(Ccm_list, Ctot)
 
+
         Ftot = return_tot_elements(Fcm_list[0])
         Fcm_list = calculate_percentage_confusion_matrix(Fcm_list, Ftot)
 
@@ -238,24 +203,21 @@ class SVCClassificator:
         statistic_C = return_statistics_pcm(Ccm_list)
         statistic_F = return_statistics_pcm(Fcm_list)
         statistic_M = return_statistics_pcm(Mcm_list)
-
+        
+        
         print('CHINESE')
-        print('Exit 0')
         for i in statistic_C:
                 print(i)
-        
+        #print(statistic_C)
         print('FRENCH')
-        print('Exit 0')
         for i in statistic_F:
                 print(i)
-        
+        #print(statistic_F)
         print('MIX')
-        print('Exit 0')
         for i in statistic_M:
                 print(i)
-        
-        #print(statistic_C)
-        
+        #print(statistic_M)
+
         ###################################################################
         ################## PRINT RESULTS ##################################
         accuracy_C = statistic_C[0][0][0] + statistic_C[0][1][1]
@@ -265,9 +227,11 @@ class SVCClassificator:
         print('French Accuracy Out 0 ', accuracy_F, '%')
         print('Mixed Accuracy Out 0 ', accuracy_M, '%')
 
+
+
         ####################################################################
         ###################### PLOT IMAGE ##################################
         print('PLOT IMAGE')
         plt.figure()
-        plt.imshow(np.reshape(itd.CXT[10], (itd.size,itd.size)))
+        plt.imshow(np.reshape(CX[30], (itd.size,itd.size)))
         plt.show()

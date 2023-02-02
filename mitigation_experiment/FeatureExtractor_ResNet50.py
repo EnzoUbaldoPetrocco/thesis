@@ -143,7 +143,7 @@ class FeatureExtractor:
         batch_size = 1
         self.batch_size = batch_size
 
-        validation_split = 0.15
+        validation_split = 0.1
         
         self.chindatagen = ImageDataGenerator(
             validation_split=validation_split,
@@ -175,7 +175,6 @@ class FeatureExtractor:
         
         #model.summary()
         x = Flatten()(x)
-        x = Dense(100, activation='relu', name= 'output_layer')(x)
         chin = Dense(1, activation='sigmoid', name='dense')(x)
         fren = Dense(1, activation='sigmoid', name='dense_1')(x)
         model = Model(inputs=input,
@@ -201,15 +200,15 @@ class FeatureExtractor:
         verbose_param = 1
         #self.batch_end = self.CustomCallback(self.model, self.lamb)
         
-        lr_reduce = ReduceLROnPlateau(monitor='val_dense_accuracy', factor=0.2, patience=2, verbose=1, mode='max', min_lr=1e-8)
+        lr_reduce = ReduceLROnPlateau(monitor='val_dense_accuracy', factor=0.2, patience=3, verbose=1, mode='max', min_lr=1e-8)
         #checkpoint = ModelCheckpoint('vgg16_finetune.h15', monitor= 'val_accuracy', mode= 'max', save_best_only = True, verbose= 0)
-        early = EarlyStopping(monitor='val_dense_accuracy', min_delta=0.001, patience=8, verbose=1, mode='auto')
+        early = EarlyStopping(monitor='val_dense_accuracy', min_delta=0.001, patience=10, verbose=1, mode='auto')
 
-        lr_reduce_1 = ReduceLROnPlateau(monitor='val_dense_1_accuracy', factor=0.2, patience=2, verbose=1, mode='max', min_lr=1e-8)
+        lr_reduce_1 = ReduceLROnPlateau(monitor='val_dense_1_accuracy', factor=0.2, patience=3, verbose=1, mode='max', min_lr=1e-8)
         #checkpoint = ModelCheckpoint('vgg16_finetune.h15', monitor= 'val_accuracy', mode= 'max', save_best_only = True, verbose= 0)
-        early_1 = EarlyStopping(monitor='val_dense_1_accuracy', min_delta=0.001, patience=8, verbose=1, mode='auto')
+        early_1 = EarlyStopping(monitor='val_dense_1_accuracy', min_delta=0.001, patience=10, verbose=1, mode='auto')
         
-        learning_rate= 1e-4
+        learning_rate= 5e-4
         learning_rate_fine = 1e-8
         
         adam = optimizers.Adam(learning_rate)
@@ -329,7 +328,7 @@ class FeatureExtractor:
 
         #################################################
         ############# FEATURE EXTRACTION ################
-        layer_name = 'output_layer'
+        layer_name = 'resnet50'
         model = Model(inputs=model.inputs, outputs= model.get_layer(layer_name).output) 
         #device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         #print('Using device:' , device)
