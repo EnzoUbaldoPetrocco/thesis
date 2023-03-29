@@ -223,15 +223,6 @@ class RFCClassificator:
         accuracy_C = statistic_C[0][0][0] + statistic_C[0][1][1]
         accuracy_F = statistic_F[0][0][0] + statistic_F[0][1][1]
         accuracy_M = statistic_M[0][0][0] + statistic_M[0][1][1]
-        print('Chinese Accuracy Out 0 ', accuracy_C, '%')
-        print('French Accuracy Out 0 ', accuracy_F, '%')
-        print('Mixed Accuracy Out 0 ', accuracy_M, '%')
-
-
-
-        ####################################################################
-        ###################### PLOT IMAGE ##################################
-        print('PLOT IMAGE')
-        plt.figure()
-        plt.imshow(np.reshape(CX[30], (itd.size,itd.size)))
-        plt.show()
+        print('Chinese Accuracy ', accuracy_C, '%')
+        print('French Accuracy ', accuracy_F, '%')
+        print('Mixed Accuracy ', accuracy_M, '%')

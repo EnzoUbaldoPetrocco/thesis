@@ -13,7 +13,6 @@ import random
 import time
 import os
 from PIL import Image
-from torch import randint
 import os, shutil
 
 
@@ -209,8 +208,6 @@ class ImagesToData:
     self.chinese_off = self.chinese_off[int(len(self.chinese_off)*self.prop*0.9):len(self.chinese_off)-1]
     self.french_on = self.french_on[int(len(self.french_on)*self.prop*0.9):len(self.french_on)-1]
     self.french_off = self.french_off[int(len(self.french_off)*self.prop*0.9):len(self.french_off)-1]
-
-
 
   def mix(self):
     self.chinese = list(self.chinese)

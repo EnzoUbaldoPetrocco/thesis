@@ -1,16 +1,16 @@
 #! /usr/bin/env python3
 
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-from sklearn.svm import SVC
-from sklearn.model_selection import GridSearchCV
-from torch import logspace
-from FeatureExtractor_ResNet50 import FeatureExtractor
 from math import floor
-from sklearn.metrics import confusion_matrix
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 import tensorflow as tf
-import torch
+from FeatureExtractor_ResNet50 import FeatureExtractor
+from sklearn.metrics import confusion_matrix
+from sklearn.model_selection import GridSearchCV
+from sklearn.svm import SVC
+
 
 class SVCClassificator:
 
@@ -63,7 +63,7 @@ class SVCClassificator:
                 #####################################################################
                 ################### MODEL SELECTION (HYPERPARAMETER TUNING)##########
 
-                points = 80
+                points = 70
                 print('MODEL SELECTION AND TUNING')
                 if self.kernel == 'rbf':
                     logspaceC = np.logspace(-2,2.5,points)

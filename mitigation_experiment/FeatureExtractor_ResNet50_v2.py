@@ -28,8 +28,6 @@ from keras import backend as K
 '''config = tf.compat.v1.ConfigProto()
 config.gpu_options.allow_growth = True
 session = tf.compat.v1.Session(config=config)'''
-import torch
-import os
 
 
 BATCH_SIZE = 1
@@ -70,7 +68,6 @@ def batch_generator(X, Y, batch_size = BATCH_SIZE):
 
 class FeatureExtractor:
     def __init__(self, ds_selection = ""):
-        device = torch.device('cpu')
 
         self.ds_selection = ds_selection
         itd = manipulating_images_better.ImagesToData(ds_selection = self.ds_selection)
@@ -87,7 +84,7 @@ class FeatureExtractor:
 
         batch_size = 1
         self.size = itd.size
-        validation_split = 0.3
+        validation_split = 0.1
         
         chindatagen = ImageDataGenerator(
             validation_split=validation_split,
@@ -112,39 +109,52 @@ class FeatureExtractor:
         ######################################################################################
         ############################# MODEL GENERATION #######################################
         
-        model = tf.keras.Sequential([
-        ResNet50( #tf.keras.applications.efficientnet.EfficientNetB0
+        input = Input((itd.size, itd.size, 3))
+
+        x = ResNet50( 
             input_shape=(itd.size, itd.size, 3),
             weights='imagenet',
-            include_top=False
-        )#,
-        #L.GlobalAveragePooling2D()#,
-        #L.Dense(1, activation='sigmoid')
-    ])
-        model.add(Flatten())
-        #model.add(Dense(50, activation='relu'))
-        model.add(Dense(1, activation='sigmoid'))
+            include_top=False)(input)
+        
+        #model.summary()
+        x = Flatten()(x)
+        #chin = Dropout(0.15)(x)
+        #fren = Dropout(0.15)(x)
+        #chin = Dense(50, activation = 'relu', name='output')(chin)
+        #fren = Dense(50, activation = 'relu', name='output_1')(fren)
+        chin = Dense(1, activation='sigmoid', name='dense')(x)
+        fren = Dense(1, activation='sigmoid', name='dense_1')(x)
+        model = Model(inputs=input,
+                     outputs = [chin,fren],
+                     name= 'model')
+        #model.summary()
         model.trainable = True
-        for layer in model.layers[0].layers:
+        for layer in model.layers[1].layers:
             layer.trainable = False
-        # We unfreeze the top 20 layers while leaving BatchNorm layers frozen
-        for layer in model.layers[0].layers[-1:]:
+        #model.summary()
+        for layer in model.layers[1].layers[-1:]:
             if not isinstance(layer, layers.BatchNormalization):
                 layer.trainable = True
-        model.summary()
+
+        #model.summary()
+        self.model = model
 
         ####################################################################################
         ###################### TRAINING LAST LAYERS AND FINE TUNING ########################
         print('RETRAINING')
         
-        ep = 25
+        ep = 100
         eps_fine = 10
         verbose_param = 1
         
-        lr_reduce = ReduceLROnPlateau(monitor='val_accuracy', factor=0.3, patience=5, verbose=1, mode='max', min_lr=1e-8)
+        lr_reduce = ReduceLROnPlateau(monitor='val_accuracy', factor=0.2, patience=3, verbose=1, mode='max', min_lr=1e-8)
         #checkpoint = ModelCheckpoint('vgg16_finetune.h15', monitor= 'val_accuracy', mode= 'max', save_best_only = True, verbose= 0)
-        early = EarlyStopping(monitor='val_accuracy', min_delta=0.001, patience=5, verbose=1, mode='auto')
+        early = EarlyStopping(monitor='val_accuracy', min_delta=0.001, patience=10, verbose=1, mode='auto')
         
+        lr_reduce_1 = ReduceLROnPlateau(monitor='val_dense_1_accuracy', factor=0.2, patience=3, verbose=1, mode='max', min_lr=1e-8)
+        #checkpoint = ModelCheckpoint('vgg16_finetune.h15', monitor= 'val_accuracy', mode= 'max', save_best_only = True, verbose= 0)
+        early_1 = EarlyStopping(monitor='val_dense_1_accuracy', min_delta=0.001, patience=10, verbose=1, mode='auto')
+
         learning_rate= 4e-4
         learning_rate_fine = 1e-8
         
@@ -203,7 +213,7 @@ class FeatureExtractor:
             Number_Of_Training_Images = french.classes.shape[0]
             steps_per_epoch = Number_Of_Training_Images/batch_size
 
-            history = model.fit(french, epochs=ep, validation_data=french_val, callbacks=[ lr_reduce], verbose=verbose_param)
+            history = model.fit(french, epochs=ep, validation_data=french_val, callbacks=[early, lr_reduce], verbose=verbose_param)
             
         if self.ds_selection == "mix":
             print('mix')

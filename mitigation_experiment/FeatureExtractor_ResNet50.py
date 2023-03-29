@@ -1,7 +1,5 @@
 #! /usr/bin/env python3
-import re
 from pathlib import Path
-from tkinter import W
 
 import cv2
 import keras.layers as L
@@ -16,7 +14,7 @@ from keras.preprocessing.image import ImageDataGenerator
 from matplotlib import pyplot as plt
 from sklearn.utils import shuffle
 from tensorflow.keras.applications.resnet50 import ResNet50
-from tensorflow.keras.layers import Dense
+from tensorflow.keras.layers import Dense, Dropout
 from tensorflow.keras.models import Model
 from tensorflow.keras.preprocessing import image
 
@@ -26,7 +24,6 @@ import manipulating_images_better
 config.gpu_options.allow_growth = True
 session = tf.compat.v1.Session(config=config)'''
 import pandas as pd
-import torch
 
 working_directory = 'MITIGATION'
 weight1 = 0
@@ -116,7 +113,6 @@ class FeatureExtractor:
         
     def __init__(self, ds_selection = ""):
         global model_loss
-        device = torch.device('cpu')
 
         self.ds_selection = ds_selection
         itd = manipulating_images_better.ImagesToData(ds_selection = self.ds_selection)
@@ -172,11 +168,14 @@ class FeatureExtractor:
             input_shape=(itd.size, itd.size, 3),
             weights='imagenet',
             include_top=False)(input)
-        
         #model.summary()
         x = Flatten()(x)
-        chin = Dense(1, activation='sigmoid', name='dense')(x)
-        fren = Dense(1, activation='sigmoid', name='dense_1')(x)
+        chin = Dropout(0.15)(x)
+        fren = Dropout(0.15)(x)
+        chin = Dense(50, activation = 'relu', name='output')(chin)
+        fren = Dense(50, activation = 'relu', name='output_1')(fren)
+        chin = Dense(1, activation='sigmoid', name='dense')(chin)
+        fren = Dense(1, activation='sigmoid', name='dense_1')(fren)
         model = Model(inputs=input,
                      outputs = [chin,fren],
                      name= 'model')
@@ -192,11 +191,13 @@ class FeatureExtractor:
         #model.summary()
         self.model = model
 
+        
+        
         ####################################################################################
         ###################### TRAINING LAST LAYERS AND FINE TUNING ########################
         print('RETRAINING')
         
-        ep = 1
+        ep = 100
         verbose_param = 1
         #self.batch_end = self.CustomCallback(self.model, self.lamb)
         
@@ -208,7 +209,7 @@ class FeatureExtractor:
         #checkpoint = ModelCheckpoint('vgg16_finetune.h15', monitor= 'val_accuracy', mode= 'max', save_best_only = True, verbose= 0)
         early_1 = EarlyStopping(monitor='val_dense_1_accuracy', min_delta=0.001, patience=10, verbose=1, mode='auto')
         
-        learning_rate= 5e-4
+        learning_rate= 9e-4
         learning_rate_fine = 1e-8
         
         adam = optimizers.Adam(learning_rate)
@@ -252,12 +253,10 @@ class FeatureExtractor:
             y_val = tf.stack(y_val)
             
             tf.get_logger().setLevel('ERROR')
-            print(np.linalg.norm(np.array([i[0] for i in self.model.layers[len(self.model.layers)-2].get_weights()])-np.array([i[0] for i in self.model.layers[len(self.model.layers)-1].get_weights()])))
             history = self.model.fit(X , y,
             epochs=ep, validation_data=(X_val, y_val), 
             callbacks=[early, lr_reduce],verbose=verbose_param, batch_size=batch_size)
-            print(np.linalg.norm(np.array([i[0] for i in self.model.layers[len(self.model.layers)-2].get_weights()])-np.array([i[0] for i in self.model.layers[len(self.model.layers)-1].get_weights()])))
-            
+
         if self.ds_selection == "french":
             print('french')
             ds = self.dataset_management()
@@ -287,13 +286,15 @@ class FeatureExtractor:
             X_val = tf.stack(X_val)
             y_val = tf.stack(y_val)
 
+            print(f'X shape:  {np.shape(X)}' )
+            print(f'y shape:  {np.shape(y)}' )
+            print(f'X_val shape:  {np.shape(X_val)}' )
+            print(f'y_val shape:  {np.shape(y_val)}' )
+
             tf.get_logger().setLevel('ERROR')
-            print(np.linalg.norm(np.array([i[0] for i in self.model.layers[len(self.model.layers)-2].get_weights()])-np.array([i[0] for i in self.model.layers[len(self.model.layers)-1].get_weights()])))
             history = self.model.fit(X , y,
             epochs=ep, validation_data=(X_val, y_val), 
             callbacks=[early_1, lr_reduce_1],verbose=verbose_param, batch_size=batch_size)
-            print(np.linalg.norm(np.array([i[0] for i in self.model.layers[len(self.model.layers)-2].get_weights()])-np.array([i[0] for i in self.model.layers[len(self.model.layers)-1].get_weights()])))
-            
 
         self.M = self.model
             
@@ -328,24 +329,31 @@ class FeatureExtractor:
 
         #################################################
         ############# FEATURE EXTRACTION ################
+        
         layer_name = 'resnet50'
-        model = Model(inputs=model.inputs, outputs= model.get_layer(layer_name).output) 
+        
+        chin_model = Model(inputs=model.inputs, outputs= model.get_layer('output').output)
+        
+        #model = Model(inputs=model.inputs, outputs=model.layers[:-3]) 
+        fren_model = Model(inputs=model.inputs, outputs= model.get_layer('output_1').output) 
         #device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         #print('Using device:' , device)
         
         print('FEATURE EXTRACTION')
 
+        print('USING CHINESE OUTPUT ...')
         features = []
         for i in self.CXT:
             x = np.reshape(i, (itd.size,itd.size))*255
             x = cv2.merge([x,x,x])
             x = image.img_to_array(x)
             x = np.expand_dims(x, axis=0)
-            feature = model.predict(x, verbose = 0)
+            print(np.shape(x))
+            feature = chin_model.predict(x, verbose = 0)
             features.append(feature[0])
         
-        self.CX = features
-        self.CY = self.CYT
+        self.chin_CX = features
+        self.chin_CY = self.CYT
 
         features = []
         for i in self.FXT:
@@ -353,11 +361,11 @@ class FeatureExtractor:
             x = cv2.merge([x,x,x])
             x = image.img_to_array(x)
             x = np.expand_dims(x, axis=0)
-            feature = model.predict(x, verbose = 0)
+            feature = chin_model.predict(x, verbose = 0)
             features.append(feature[0])
         
-        self.FX = features
-        self.FY = self.FYT
+        self.chin_FX = features
+        self.chin_FY = self.FYT
 
         features = []
         for i in self.MXT:
@@ -365,8 +373,45 @@ class FeatureExtractor:
             x = cv2.merge([x,x,x])
             x = image.img_to_array(x)
             x = np.expand_dims(x, axis=0)
-            feature = model.predict(x, verbose = 0)
+            feature = chin_model.predict(x, verbose = 0)
             features.append(feature[0])
         
-        self.MX = features
-        self.MY = self.MYT
+        self.chin_MX = features
+        self.chin_MY = self.MYT
+
+        print('USING FRENCH OUTPUT ...')
+        features = []
+        for i in self.CXT:
+            x = np.reshape(i, (itd.size,itd.size))*255
+            x = cv2.merge([x,x,x])
+            x = image.img_to_array(x)
+            x = np.expand_dims(x, axis=0)
+            feature = fren_model.predict(x, verbose = 0)
+            features.append(feature[0])
+        
+        self.fren_CX = features
+        self.fren_CY = self.CYT
+
+        features = []
+        for i in self.FXT:
+            x = np.reshape(i, (itd.size,itd.size))*255
+            x = cv2.merge([x,x,x])
+            x = image.img_to_array(x)
+            x = np.expand_dims(x, axis=0)
+            feature = fren_model.predict(x, verbose = 0)
+            features.append(feature[0])
+        
+        self.fren_FX = features
+        self.fren_FY = self.FYT
+
+        features = []
+        for i in self.MXT:
+            x = np.reshape(i, (itd.size,itd.size))*255
+            x = cv2.merge([x,x,x])
+            x = image.img_to_array(x)
+            x = np.expand_dims(x, axis=0)
+            feature = fren_model.predict(x, verbose = 0)
+            features.append(feature[0])
+        
+        self.fren_MX = features
+        self.fren_MY = self.MYT
