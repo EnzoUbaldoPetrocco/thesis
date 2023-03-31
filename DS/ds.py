@@ -11,10 +11,11 @@ import random
 import time
 import os, shutil
 from PIL import Image
+import random
 
 n_ims = 1000
 
-class DS:
+class DSClass:
   # utils
   def options(self, options, default=1):
     if options == None:
@@ -53,6 +54,8 @@ class DS:
     except:
         return False
 
+
+  
   # OFFLINE 
   # prepare path and images
   def delete_folder_content(self, folder):
@@ -90,7 +93,7 @@ class DS:
       n = 2
       self.labels = ['0', '1']
     
-  def acquire_images(self,path):
+  def acquire_images(self,path, grayscale = False):
     images = []
     types = ('*.png', '*.jpg', '*.jpeg')
     paths = []
@@ -98,13 +101,17 @@ class DS:
         paths.extend(pathlib.Path(path).glob(typ))
     paths = paths[0:n_ims]
     for i in paths:
-      im = cv2.imread(str(i))
+      if grayscale:
+        im = cv2.imread(str(i),cv2.IMREAD_GRAYSCALE)
+      else:
+        im = cv2.imread(str(i))
       images.append(im)
     return images
 
   # transform images
   # assumption, starting point is rgb
   def modify_color(self, img):
+    img = img[:,:,::-1]
     # HSV color
     if self.color == 2:
       img = skimage.color.rgb2hsv(img)
@@ -115,7 +122,7 @@ class DS:
   
   def strc(self, img):
     im_dim = np.shape(img)
-    dim = (self.size, self.size, im_dim[2])
+    dim = (self.size, self.size)
     img = cv2.resize(img, dim, interpolation = cv2.INTER_AREA)
     return img
   
@@ -160,7 +167,7 @@ class DS:
         img = self.modify_color(img)
         dest = self.destination + '/' + str(self.size) + '/' + self.opts[self.color-1]  + '/' + label
         self.mkdir(dest)
-        im = Image.fromarray(np.uint8(img*255))
+        im = Image.fromarray(np.uint8(img))
         im.save(dest + '/im' + str(i) + '.jpeg')
         #cv2.imwrite(dest + '/' + str(i) + '.jpg', img)
 
@@ -174,52 +181,100 @@ class DS:
     except:
        self.size = 33
     self.stretch = self.accept('Do you want to stretch the image (default, fill with white pixels) ')
-    
-  
 
-  def prepare(self):
-    # prepare path and images
+  def prepare(self, arg, auto = False):
     self.paths()
-    self.preferences()
+    # prepare path and images
+    if auto:
+      if arg:
+        self.color = arg['color']
+        self.size = arg['size']
+        self.stretch = arg['stretch']
+      else:
+         self.color = 3
+         self.size = 33
+         self.stretch = 0
+    else:
+      self.preferences()
     # transform images
     for label in self.labels:
       dataset = self.acquire_images(self.starting + '/' + label)
       self.modify(dataset, label)
     
-
   # ONLINE 
   def get_labels(self, path):
     dir_list = []
     for file in os.listdir(path):
         d = os.path.join(path, file)
         if os.path.isdir(d):
+            d = d.split('\\')[-1]
             dir_list.append(d)
     return dir_list
 
   def splitting(self, path, i, label):
-    images = self.acquire_images(path + '/' + label)
+    images = self.acquire_images(path + '/' + label, self.greyscale)
     training = []
     test = []
+    mixedtest = []
     if len(images)>1:
-      for image in images[0:int(len(images*self.proportion))]: 
-        training.append((image, i))
-      for image in images[int(len(images*self.proportion)):len(images)-1]:
-         test.append((image, i))
+      for image in images[0:int(len(images)*self.Xl)]: 
+        #image = image.flatten()
+        if self.greyscale:
+          image = image[0::]
+        training.append((image.flatten(), i))
+      for image in images[int(len(images)*self.Xl):int(len(images)*self.Xl)+int(len(images)*self.XTl)]:
+        #image = image.flatten()
+        if self.greyscale:
+          image = image[0::]
+        test.append((image.flatten(), i))
+      for image in images[int(len(images)*self.Xl)+int(len(images)*self.XTl):len(images)-1]:
+        #image = image.flatten()
+        if self.greyscale:
+          image = image[0::]
+        mixedtest.append((image.flatten(), i))
     else:
       print(f'{path} is empty')
-    self.TS.append((training))
-    self.TestS.append((test))
+    
+    return training, test, mixedtest
+    #self.TS.append(training)
+    #self.TestS.append(test)
 
-  def build_dataset(self, paths):
-    self.proportion = 0.85
+  def build_dataset(self, paths, greyscale):
+    # managing proportions useful for 70:20:10 splitting:
+    # - Pv validation proportion wrt Training Set
+    # - Pt test proportion
+    Pv = 2/7 
+    Pt = 1/7
+    # Xl prop of X, XTl = prop of XT
+    self.Xl = (Pv + 1)/(Pv + 2*Pt + 1)
+    self.XTl = (Pt)/(Pv + 2*Pt + 1)
+    #self.proportion = 0.85
+    self.greyscale = greyscale
     # for each path build a dataset
     # the dataset is divided into training and test set
     self.TS = []
     self.TestS = []
+    self.MixedTestS = []
+    tempTS = []
+    tempTestS = []
+    if paths != None:
+      for path in paths:
+        labels = self.get_labels(path)
+        for i, label in enumerate(labels):
+          training, test, mixedtest = self.splitting(path, i, label)
+          tempTS = tempTS + training
+          tempTestS = tempTestS + test
+          self.MixedTestS = self.MixedTestS + mixedtest
+        
+        random.shuffle(tempTS)
+        random.shuffle(tempTestS)
+        random.shuffle(self.MixedTestS)
+        self.TS.append(tempTS)
+        self.TestS.append(tempTestS)
+        tempTS = []
+        tempTestS = []
 
-    for path in paths:
-      labels = self.get_labels(path)
-      for i, label in enumerate(labels):
-        self.splitting(path, i, label)
+    else:
+         print('Paths is None')
+      
     
-
