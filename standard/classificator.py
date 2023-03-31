@@ -42,7 +42,7 @@ class ClassificatorClass:
                         cv = 10,
                         verbose = 0)
         # training set is divided into (X,y)
-        TS = np.array(TS)
+        TS = np.array(TS, dtype = object)
         X = list(TS[:,0])
         y = list(TS[:,1])
         print('SVC TRAINING')
@@ -66,9 +66,10 @@ class ClassificatorClass:
         
         CV_rfc = GridSearchCV(estimator=rfc, param_grid=param_grid, cv= 5)
         # training set is divided into (X,y)
-        TS = np.array(TS)
+        TS = np.array(TS, dtype = object)
         X = TS[:,0]
         y = TS[:,1]
+        
         print('RFC TRAINING')
         H = CV_rfc.fit(X,y)
 
@@ -148,13 +149,10 @@ class ClassificatorClass:
             matrix.append(min_matrix)
             return matrix
     
-    def test(model, testSet):
-        XT = testSet[:0]
-        yT= testSet[:1]
-        print(np.shape(XT))
-        print(np.shape(XT[0]))
-        print(np.shape(yT))
-        print(np.shape(yT[0]))
+    def test(self, model, testSet):
+        testSet = np.array(testSet, dtype=object)
+        XT = list(testSet[:,0])
+        yT= list(testSet[:,1])
 
         yF = model.predict(XT)
         cm = confusion_matrix(yT, yF)
@@ -170,7 +168,6 @@ class ClassificatorClass:
             # I have to select a culture
             TS = obj.TS[self.culture]
             # I have to test on every culture
-            print(np.shape(TS))
             TestSets = obj.TestS
             MixedTestSet = obj.MixedTestS
             if self.type == 'SVC':
@@ -180,14 +177,18 @@ class ClassificatorClass:
             else:
                 model = self.SVC(TS)
             cms = []
-            for TestSet in TestSets:
-                cms.append(self.test(model, TestSet))
-            results = results + cms
+            for k, TestSet in enumerate(TestSets):
+                cm = self.test(model, TestSet)
+                cms.append(cm)
+            results.append(cms)
             mixedResults.append(self.test(model, MixedTestSet))
         
-        for i, result in enumerate(results):
+        results = np.array(results, dtype = object)
+        for i in range(len(obj.TS)):
+            result = results[:,i]
             print(f'RESULTS OF CULTURE {i}')
-            tot = self.return_tot_elements(result[0])
+            print(np.shape(result))
+            tot = self.return_tot_elements(result[i])
             pcm_list = self.calculate_percentage_confusion_matrix(result, tot)
             statistic = self.return_statistics_pcm(pcm_list)
             for j in statistic:
@@ -195,9 +196,11 @@ class ClassificatorClass:
             accuracy = statistic[0][0][0] + statistic[0][1][1]
             print(f'Accuracy is {accuracy} %')
 
+        print(mixedResults)
+        print(mixedResults[0])
         print('MIXED RESULTS')
-        tot = self.return_tot_elements(result)
-        pcm_list = self.calculate_percentage_confusion_matrix(result, tot)
+        tot = self.return_tot_elements(mixedResults[0])
+        pcm_list = self.calculate_percentage_confusion_matrix(mixedResults, tot)
         statistic = self.return_statistics_pcm(pcm_list)
         for j in statistic:
             print(j)
