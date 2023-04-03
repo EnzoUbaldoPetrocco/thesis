@@ -196,8 +196,6 @@ class ClassificatorClass:
             accuracy = statistic[0][0][0] + statistic[0][1][1]
             print(f'Accuracy is {accuracy} %')
 
-        print(mixedResults)
-        print(mixedResults[0])
         print('MIXED RESULTS')
         tot = self.return_tot_elements(mixedResults[0])
         pcm_list = self.calculate_percentage_confusion_matrix(mixedResults, tot)
@@ -206,6 +204,56 @@ class ClassificatorClass:
             print(j)
         accuracy = statistic[0][0][0] + statistic[0][1][1]
         print(f'Accuracy is {accuracy} %')
+
+    def execute_mixed(self):
+        results = []
+        mixedResults = []
+        for i in range(self.times):
+            print(f'CICLE {i}')
+            obj = DS.ds.DSClass()
+            obj.build_dataset(self.paths, self.greyscale)
+            # I have to mix the cultures
+            TS = []
+            for culture in obj.TS:
+                  TS.append(culture)
+            # I have to test on every culture
+            TestSets = obj.TestS
+            MixedTestSet = obj.MixedTestS
+            if self.type == 'SVC':
+                model = self.SVC(TS)
+            elif self.type == 'RFC':
+                model = self.RFC(TS)
+            else:
+                model = self.SVC(TS)
+            cms = []
+            for k, TestSet in enumerate(TestSets):
+                cm = self.test(model, TestSet)
+                cms.append(cm)
+            results.append(cms)
+            mixedResults.append(self.test(model, MixedTestSet))
+        
+        results = np.array(results, dtype = object)
+        for i in range(len(obj.TS)):
+            result = results[:,i]
+            print(f'RESULTS OF CULTURE {i}')
+            print(np.shape(result))
+            tot = self.return_tot_elements(result[i])
+            pcm_list = self.calculate_percentage_confusion_matrix(result, tot)
+            statistic = self.return_statistics_pcm(pcm_list)
+            for j in statistic:
+                print(j)
+            accuracy = statistic[0][0][0] + statistic[0][1][1]
+            print(f'Accuracy is {accuracy} %')
+
+        print('MIXED RESULTS')
+        tot = self.return_tot_elements(mixedResults[0])
+        pcm_list = self.calculate_percentage_confusion_matrix(mixedResults, tot)
+        statistic = self.return_statistics_pcm(pcm_list)
+        for j in statistic:
+            print(j)
+        accuracy = statistic[0][0][0] + statistic[0][1][1]
+        print(f'Accuracy is {accuracy} %')
+
         
 
 
