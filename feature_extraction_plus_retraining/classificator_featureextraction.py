@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.svm import SVC
 from sklearn.model_selection import GridSearchCV
-from FeatureExtractor_ResNet50_v2 import FeatureExtractor
+from FeatureExtractor_ResNet50 import FeatureExtractor
 from math import floor
 from sklearn.metrics import confusion_matrix
 import tensorflow as tf
@@ -96,7 +96,7 @@ class SVCClassificator:
                 ################### MODEL SELECTION (HYPERPARAMETER TUNING)##########
                 #device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
                 #print('Using device:' , device)
-                points = 70
+                points = 80
                 print('MODEL SELECTION AND TUNING')
                 if self.kernel == 'rbf':
                     logspaceC = np.logspace(-2,2.5,points)

@@ -14,6 +14,7 @@ import os
 from PIL import Image
 import os, shutil
 
+
 size = 75
 total_n_images = 469
 
@@ -202,6 +203,8 @@ class ImagesToData:
     self.french_on = self.french_on[int(len(self.french_on)*self.prop):len(self.french_on)-1]
     self.french_off = self.french_off[int(len(self.french_off)*self.prop):len(self.french_off)-1]
 
+
+
   def mix(self):
     self.chinese = list(self.chinese)
     self.chinese_categories = list(self.chinese_categories)
@@ -249,6 +252,8 @@ class ImagesToData:
     self.CYT = self.chinese_categories[first + 1 : second]
     self.MXT = self.chinese[second + 1 : fin]
     self.MYT = self.chinese_categories[second + 1 : fin]
+    
+
 
     self.FX = self.french[0 : first]
     self.FY = self.french_categories[0 : first]
@@ -274,6 +279,9 @@ class ImagesToData:
     self.MXT = numpy.array(self.MXT)
     self.MYT = numpy.array(self.MYT)
 
+    
+    
+
   def little_mix(self):
     self.MCX = list(self.CX)
     self.MCY = list(self.CY)
@@ -295,6 +303,10 @@ class ImagesToData:
     self.MFX = numpy.array(self.MFX)
     self.MFY = numpy.array(self.MFY)
 
+
+    
+
+
   def __init__(self, initialize = False, create_directory = False, ds_selection = 'default'):
     self.dspath = ds_selection
     self.size = size
@@ -306,6 +318,9 @@ class ImagesToData:
     self.mixed_categories = []
     if initialize:
       self.initial_routine(create_directory)
+    
+    
+
 
 itd = ImagesToData(False, True)
 #itd.initial_routine()

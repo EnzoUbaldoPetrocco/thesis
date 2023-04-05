@@ -116,7 +116,7 @@ class ImagesToData:
       im.save(path + '/im' + str(i) + '.jpeg')
 
   def mix_list(self, list):
-    for i in range(99999):
+    for i in range(999999):
       index = random.randint(0,len(list)-1)
       temp = list[index]
       list.pop(index)
@@ -223,7 +223,7 @@ class ImagesToData:
     self.chinese_categories = list(self.chinese_categories)
     self.french = list(self.french)
     self.french_categories = list(self.french_categories)
-    for i in range(99999):
+    for i in range(999999):
       index = random.randint(0,len(self.chinese)-1)
       temp_chin = self.chinese[index]
       temp_chin_cat = self.chinese_categories[index]
@@ -231,7 +231,7 @@ class ImagesToData:
       self.chinese.append(temp_chin)
       self.chinese_categories.pop(index)
       self.chinese_categories.append(temp_chin_cat)
-    for i in range(99999):
+    for i in range(999999):
       index = random.randint(0,len(self.french)-1)
       temp_fren = self.french[index]
       temp_fren_cat = self.french_categories[index]

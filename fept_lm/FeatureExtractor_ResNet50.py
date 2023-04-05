@@ -1,37 +1,37 @@
 #! /usr/bin/env python3
-
-
-import cv2
-import keras.layers as L
+from audioop import rms
+from re import I
+from unicodedata import name
+import manipulating_images_better
 import numpy as np
-import tensorflow as tf
-from keras import Model
-from keras import backend as K
-from keras import layers, models, optimizers
-from keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
-from keras.layers import Dense, Dropout, Flatten, Input, Lambda, MaxPooling3D
-from keras.models import Sequential
-from keras.preprocessing.image import ImageDataGenerator
-from matplotlib import pyplot as plt
-from skimage.color import gray2rgb
-from tensorflow.keras.applications import efficientnet
-from tensorflow.keras.applications.efficientnet import EfficientNetB3
-from tensorflow.keras.applications.efficientnet_v2 import EfficientNetV2S
-from tensorflow.keras.applications.inception_resnet_v2 import InceptionResNetV2
-from tensorflow.keras.applications.inception_v3 import InceptionV3
 from tensorflow.keras.applications.resnet50 import ResNet50
-from tensorflow.keras.applications.vgg16 import VGG16, preprocess_input
+from tensorflow.keras.applications.vgg16 import VGG16
 from tensorflow.keras.applications.vgg19 import VGG19
 from tensorflow.keras.applications.xception import Xception
-from tensorflow.keras.layers import Dense
-from tensorflow.keras.models import Model
+from tensorflow.keras.applications.inception_v3 import InceptionV3
+from tensorflow.keras.applications.inception_resnet_v2 import InceptionResNetV2
 from tensorflow.keras.preprocessing import image
-
-import manipulating_images_better
-
+from tensorflow.keras.applications.vgg16 import preprocess_input
+import cv2
+from keras.preprocessing.image import ImageDataGenerator
+from keras import layers, models, Model, optimizers
+from keras.callbacks import ReduceLROnPlateau, ModelCheckpoint, EarlyStopping
+import tensorflow as tf
+from skimage.color import gray2rgb
+from matplotlib import pyplot as plt
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Dense
+import keras.layers as L
+from keras.layers import Input, Lambda, Dense, Flatten,Dropout, MaxPooling3D
+from keras.models import Sequential
+from tensorflow.keras.applications.efficientnet_v2 import EfficientNetV2S
+from tensorflow.keras.applications import efficientnet
+from tensorflow.keras.applications.efficientnet import EfficientNetB3
+from keras import backend as K
 '''config = tf.compat.v1.ConfigProto()
 config.gpu_options.allow_growth = True
 session = tf.compat.v1.Session(config=config)'''
+import torch
 import os
 
 
@@ -68,6 +68,7 @@ def batch_generator(X, Y, batch_size = BATCH_SIZE):
 
 class FeatureExtractor:
     def __init__(self, ds_selection = ""):
+        device = torch.device('cpu')
 
         self.ds_selection = ds_selection
         itd = manipulating_images_better.ImagesToData(ds_selection = self.ds_selection)
@@ -125,10 +126,7 @@ class FeatureExtractor:
     ])
         
         model.add(Flatten())
-        model.add(Dropout(0.15))
-        model.add(Dense(50, activation = 'relu'))
         model.add(Dense(1, activation='sigmoid'))
-
         model.trainable = True
         for layer in model.layers[0].layers:
             layer.trainable = False
@@ -150,7 +148,7 @@ class FeatureExtractor:
         #checkpoint = ModelCheckpoint('vgg16_finetune.h15', monitor= 'val_accuracy', mode= 'max', save_best_only = True, verbose= 0)
         early = EarlyStopping(monitor='val_accuracy', min_delta=0.001, patience=10, verbose=1, mode='auto')
         
-        learning_rate= 4e-4
+        learning_rate= 5e-4
         learning_rate_fine = 1e-8
         
         adam = optimizers.Adam(learning_rate)
@@ -192,12 +190,18 @@ class FeatureExtractor:
             Number_Of_Training_Images = chinese.classes.shape[0]
             steps_per_epoch = Number_Of_Training_Images/batch_size
 
+            #os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+
+            #device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+            #print('Using device:' , device)
+            #model
 
             history = model.fit(chinese, 
             #batch_size = batch_size, 
             epochs=ep, validation_data=chinese_val, 
             #steps_per_epoch = steps_per_epoch,
             callbacks=[early, lr_reduce],verbose=verbose_param)
+            #device = torch.device('cpu')
             
         if self.ds_selection == "french":
             print('french')
@@ -218,8 +222,12 @@ class FeatureExtractor:
             Number_Of_Training_Images = french.classes.shape[0]
             steps_per_epoch = Number_Of_Training_Images/batch_size
 
+            #os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+            #device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+            #print('Using device:' , device)
             history = model.fit(french, epochs=ep, 
             validation_data=french_val, callbacks=[early, lr_reduce], verbose=verbose_param)
+            #device = torch.device('cpu')            
             
             
         if self.ds_selection == "mix":
@@ -241,9 +249,13 @@ class FeatureExtractor:
             
             Number_Of_Training_Images = dataset.classes.shape[0]
             steps_per_epoch = Number_Of_Training_Images/batch_size
+            #os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+            #device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+            #print('Using device:' , device)
             history = model.fit(dataset,  
             steps_per_epoch = steps_per_epoch,
             epochs=ep, validation_data=dataset_val, callbacks=[early, lr_reduce], verbose=verbose_param)
+            #device = torch.device('cpu')
 
             
         ##############################################################
@@ -289,6 +301,9 @@ class FeatureExtractor:
         #print(model.layers[-2])
         #model = Model(inputs=model.inputs, outputs=model.layers[:-2])
         model.layers.pop()        
+        #model.summary()
+        #device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        #print('Using device:' , device)
         
         print('FEATURE EXTRACTION')
         features = []
@@ -353,5 +368,6 @@ class FeatureExtractor:
         self.MYT = MYT
 
         
+        #device = torch.device('cpu') 
 
         

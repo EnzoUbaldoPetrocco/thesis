@@ -174,6 +174,7 @@ class FeatureExtractor:
         ############################# MODEL GENERATION #######################################
         
         input = Input((itd.size, itd.size, 3))
+
         x = ResNet50( 
             input_shape=(itd.size, itd.size, 3),
             weights='imagenet',
